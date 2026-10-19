@@ -1,0 +1,31 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Test file operations, settings and archives
+        run: ./test.sh
+      - name: Build universal development app
+        env:
+          BUILD_ARCHS: arm64 x86_64
+        run: ./build.sh
+      - name: Verify both architectures
+        run: lipo -verify_arch arm64 x86_64 TotalCommand.app/Contents/MacOS/TotalCommand
+      - name: Package development build
+        run: ditto -c -k --sequesterRsrc --keepParent TotalCommand.app Total-Command-development.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Total-Command-development-not-notarized
+          path: Total-Command-development.zip
+          retention-days: 7

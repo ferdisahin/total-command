@@ -1,0 +1,14 @@
+.DS_Store
+*.app/
+.build/
+dist/
+*.dmg
+*.zip
+*.p12
+*.pfx
+*.cer
+*.mobileprovision
+AuthKey_*.p8
+.env
+.env.*
+*.keychain-db
