@@ -1,10 +1,20 @@
 # Total Command 0.2.1
 
+<img src="Resources/AppIcon.png" width="96" alt="Total Command ikonu">
+
 macOS için Swift/AppKit ile geliştirilmiş, Total Commander’ın çift panel çalışma biçiminden esinlenen bağımsız dosya yöneticisi.
 
 ## Açma ve derleme
 
-`TotalCommand.app` dosyasını açın. İsterseniz Uygulamalar klasörünüze taşıyın. Intel/Apple Silicon ve macOS 13+ içindir. Paket yerel geliştirme imzası taşır; Developer ID ve noter onayı içermez.
+[İmzalı ve Apple noter onaylı DMG’yi indirin](https://github.com/ferdisahin/total-command/releases/tag/v0.2.1), açın ve `TotalCommand.app` dosyasını Uygulamalar klasörüne sürükleyin. Intel/Apple Silicon ve macOS 13+ içindir. 0.2.1 erken önizleme sürümüdür.
+
+Homebrew ile kurulum:
+
+```sh
+brew install --cask ferdisahin/tap/total-command
+```
+
+Güncellemek için `brew update` ardından `brew upgrade --cask ferdisahin/tap/total-command` kullanın. Kaynaktan yapılan varsayılan geliştirme derlemeleri ad-hoc imzalıdır.
 
 Kaynaklardan derlemek için Xcode komut satırı araçlarıyla `./build.sh`, testler için `./test.sh` çalıştırın. Harici paket kurulumu gerekmez. Arşiv işlemleri macOS’un `/usr/bin/bsdtar` aracını kullanır.
 
@@ -68,4 +78,4 @@ Arayüzde çift panel, liste/simge görünümü, sekme açma/kapatma, kopyalama,
 
 Copyright © 2026 Ferdi Sahin. **GPL-3.0-only**; tam metin [LICENSE](LICENSE). Dağıtılan değiştirilmiş sürümlerin ilgili kaynakları da GPLv3 koşullarıyla sunulmalıdır. Yazılım garanti verilmeden sağlanır.
 
-GitHub hedefi: [ferdisahin/total-command](https://github.com/ferdisahin/total-command). Açık kaynak depo yayınlandı. Developer ID ile imzalanmış ilk dağıtım ve Homebrew Cask henüz yayınlanmadı. İmzalama, noter onayı ve kişisel Homebrew tap kurulumu için [dağıtım rehberi](docs/DISTRIBUTION.md).
+GitHub hedefi: [ferdisahin/total-command](https://github.com/ferdisahin/total-command). Açık kaynak depo ve Developer ID ile imzalanıp Apple noter onayı alınmış 0.2.1 önizleme sürümü yayınlandı. Homebrew dağıtımı [kişisel tap](https://github.com/ferdisahin/homebrew-tap) üzerinden yapılır; merkezi Homebrew Cask kataloğuna kabul edildiği anlamına gelmez. İmzalama, noter onayı ve kişisel Homebrew tap kurulumu için [dağıtım rehberi](docs/DISTRIBUTION.md).

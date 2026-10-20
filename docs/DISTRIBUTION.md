@@ -2,7 +2,7 @@
 
 ## Current state
 
-GitHub target: `ferdisahin/total-command`. The selected license is GPL-3.0-only. The public source repository has been created; no Developer ID-signed public release has been created yet. Development builds are locally ad-hoc signed.
+GitHub target: `ferdisahin/total-command`. The selected license is GPL-3.0-only. The public source repository and Developer ID-signed, Apple-notarized v0.2.1 preview release are published. The Homebrew cask is maintained in `ferdisahin/homebrew-tap`. Development builds are locally ad-hoc signed.
 
 ## Apple signing
 
@@ -50,13 +50,13 @@ This creates a **draft prerelease**, requiring a final review before publication
 
 A native GUI application is distributed as a **Cask**. Begin with a personal tap named `ferdisahin/homebrew-tap`. A personal tap is independent from acceptance into the central `homebrew/cask` repository.
 
-Generate the Cask only from the final notarized DMG:
+Generate the Cask only after final notarized artifacts exist. The cask uses the ZIP containing the stapled app, avoiding a DMG mount during installation:
 
 ```sh
 ./scripts/generate-cask.sh ferdisahin total-command
 ```
 
-Copy `packaging/Casks/total-command.rb` into `Casks/total-command.rb` in the public `homebrew-tap` repository. Publish the GitHub release before testing installation, because the Cask downloads its DMG from that release URL.
+Copy `packaging/Casks/total-command.rb` into `Casks/total-command.rb` in the public `homebrew-tap` repository. Publish the GitHub release before testing installation, because the Cask downloads its ZIP from that release URL.
 
 Users can then install with:
 
