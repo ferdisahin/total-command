@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
 " · Sıra duraklatıldı" = " · Sıra duraklatıldı";
 "* herhangi bir metin, ? tek karakter." = "* herhangi bir metin, ? tek karakter.";
+"1 GB" = "1 GB";
 "1.000 sonuç" = "1.000 sonuç";
+"1.44 MB (3.5 inç Disket)" = "1.44 MB (3.5 inç Disket)";
+"100 MB (ZIP disk)" = "100 MB (ZIP disk)";
 "100 sonuç" = "100 sonuç";
 "11 punto" = "11 punto";
 "12 punto" = "12 punto";
 "13 punto" = "13 punto";
 "14 punto" = "14 punto";
 "15 punto" = "15 punto";
+"250 MB (ZIP disk)" = "250 MB (ZIP disk)";
+"4.7 GB (DVD)" = "4.7 GB (DVD)";
 "5.000 sonuç" = "5.000 sonuç";
+"650 MB (CD-ROM)" = "650 MB (CD-ROM)";
+"700 MB (CD-ROM)" = "700 MB (CD-ROM)";
 "7z Oluştur…" = "7z Oluştur…";
 "7z · 7-Zip biçimi" = "7z · 7-Zip biçimi";
 "Ad" = "Ad";
@@ -47,6 +54,7 @@
 "Ağ" = "Ağ";
 "Ağ sunucusuna bağlan" = "Ağ sunucusuna bağlan";
 "Basamak:" = "Basamak:";
+"Bayt" = "Bayt";
 "Bağlan" = "Bağlan";
 "Bağlantı Adı:" = "Bağlantı Adı:";
 "Bağlantıyı Kes" = "Bağlantıyı Kes";
@@ -57,16 +65,29 @@
 "Belgeler" = "Belgeler";
 "Bilgi Al" = "Bilgi Al";
 "Bir klasör kendi içine kopyalanamaz veya taşınamaz." = "Bir klasör kendi içine kopyalanamaz veya taşınamaz.";
+"Birleştir" = "Birleştir";
+"Birleştirilecek parça bulunamadı." = "Birleştirilecek parça bulunamadı.";
+"Birleştiriliyor: {0}" = "Birleştiriliyor: {0}";
+"Birleştirme işlemi iptal edildi." = "Birleştirme işlemi iptal edildi.";
+"Birleştirmek için .001 uzantılı bir parça dosyası seçin." = "Birleştirmek için .001 uzantılı bir parça dosyası seçin.";
 "Bitti" = "Bitti";
 "Boyut" = "Boyut";
+"Boş dosya bölünemez." = "Boş dosya bölünemez.";
 "Boşluk tuşuyla Quick Look önizleme" = "Boşluk tuşuyla Quick Look önizleme";
 "Bu Klasörü Ekle" = "Bu Klasörü Ekle";
 "Bu adda bir dosya zaten var." = "Bu adda bir dosya zaten var.";
-"Bu bir önizleme sürümüdür.\n" = "Bu bir önizleme sürümüdür.\n";
+"Bu bir önizleme sürümüdür.
+" = "Bu bir önizleme sürümüdür.
+";
 "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz." = "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz.";
 "Bu seçenek kapalıysa arşiv macOS’un varsayılan uygulamasıyla açılır. Arşiv menüsünden ZIP veya 7z biçimini ayrıca seçebilirsiniz. Şifreli arşivler bu sürümde desteklenmez." = "Bu seçenek kapalıysa arşiv macOS’un varsayılan uygulamasıyla açılır. Arşiv menüsünden ZIP veya 7z biçimini ayrıca seçebilirsiniz. Şifreli arşivler bu sürümde desteklenmez.";
+"Böl" = "Böl";
+"Bölme işlemi iptal edildi." = "Bölme işlemi iptal edildi.";
+"Bölünüyor: {0}" = "Bölünüyor: {0}";
 "Büyük simgeler" = "Büyük simgeler";
 "Büyük/Küçük Harf Duyarlı" = "Büyük/Küçük Harf Duyarlı";
+"CRC32 doğrulama dosyasını (.crc) kontrol et" = "CRC32 doğrulama dosyasını (.crc) kontrol et";
+"CRC32 doğrulama hatası! Beklenen: {0}, Hesaplanan: {1}" = "CRC32 doğrulama hatası! Beklenen: {0}, Hesaplanan: {1}";
 "Daha Sonra" = "Daha Sonra";
 "Desene Göre Seç…" = "Desene Göre Seç…";
 "Desteklenen arşivler: ZIP, 7z, RAR, TAR, GZ, BZ2, XZ." = "Desteklenen arşivler: ZIP, 7z, RAR, TAR, GZ, BZ2, XZ.";
@@ -87,6 +108,11 @@
 "Dosya İçeriğini Karşılaştır…" = "Dosya İçeriğini Karşılaştır…";
 "Dosyalar" = "Dosyalar";
 "Dosyalar birebir aynı." = "Dosyalar birebir aynı.";
+"Dosyaları Birleştir" = "Dosyaları Birleştir";
+"Dosyaları Birleştir…" = "Dosyaları Birleştir…";
+"Dosyayı Böl…" = "Dosyayı Böl…";
+"Dosyayı Parçalara Böl" = "Dosyayı Parçalara Böl";
+"Dosyayı bölmek için tek bir dosya seçin." = "Dosyayı bölmek için tek bir dosya seçin.";
 "Duraklatma, sıradaki işin başlamasını bekletir. Çalışan dosya işlemi tamamlanır. Geçmişi temizlemek dosyaları silmez." = "Duraklatma, sıradaki işin başlamasını bekletir. Çalışan dosya işlemi tamamlanır. Geçmişi temizlemek dosyaları silmez.";
 "Durum" = "Durum";
 "Düzen" = "Düzen";
@@ -142,7 +168,9 @@
 "Görseller, PDF ve videolar için küçük resim üret" = "Görseller, PDF ve videolar için küçük resim üret";
 "Görünüm" = "Görünüm";
 "Güncelle: " = "Güncelle: ";
-"Güncelleme kontrolü tamamlanamadı.\n" = "Güncelleme kontrolü tamamlanamadı.\n";
+"Güncelleme kontrolü tamamlanamadı.
+" = "Güncelleme kontrolü tamamlanamadı.
+";
 "Güncellemeler" = "Güncellemeler";
 "Güncellemeleri Kontrol Et…" = "Güncellemeleri Kontrol Et…";
 "Günde bir" = "Günde bir";
@@ -150,6 +178,7 @@
 "Harf Durumu:" = "Harf Durumu:";
 "Hata" = "Hata";
 "Hazır" = "Hazır";
+"Hedef Klasör:" = "Hedef Klasör:";
 "Hedef zaten var: {0}" = "Hedef zaten var: {0}";
 "Hedefe eşitle: {0} değişiklik" = "Hedefe eşitle: {0} değişiklik";
 "Hedefte bulunan dosyalar atlandı." = "Hedefte bulunan dosyalar atlandı.";
@@ -170,11 +199,17 @@
 "Karşılaştırılacak İkinci Dosyayı Seçin" = "Karşılaştırılacak İkinci Dosyayı Seçin";
 "Kaydet" = "Kaydet";
 "Kaynak / Hedef" = "Kaynak / Hedef";
+"Kaynak Dosya:" = "Kaynak Dosya:";
 "Kaynak Kod" = "Kaynak Kod";
 "Kaynak ve hedef klasör aynı." = "Kaynak ve hedef klasör aynı.";
-"Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur.";
+"Kaynak: {0}
+Hedef: {1}
+Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Kaynak: {0}
+Hedef: {1}
+Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur.";
 "Kayıtlı Sunucular" = "Kayıtlı Sunucular";
 "Kes" = "Kes";
+"Kilitli sekmeler kapatılamaz." = "Kilitli sekmeler kapatılamaz.";
 "Klasör" = "Klasör";
 "Klasör Aç" = "Klasör Aç";
 "Klasör Aç…" = "Klasör Aç…";
@@ -206,6 +241,9 @@
 "Otomatik kontrol" = "Otomatik kontrol";
 "Panelleri Değiştir" = "Panelleri Değiştir";
 "Panelleri Karşılaştır" = "Panelleri Karşılaştır";
+"Parça Boyutu:" = "Parça Boyutu:";
+"Parça Sayısı:" = "Parça Sayısı:";
+"Parça boyutu sıfırdan büyük olmalıdır." = "Parça boyutu sıfırdan büyük olmalıdır.";
 "Port:" = "Port:";
 "Protokol:" = "Protokol:";
 "Rahat · 30 pt" = "Rahat · 30 pt";
@@ -220,6 +258,7 @@
 "Sağ panel etkin → Hedef: sol panel" = "Sağ panel etkin → Hedef: sol panel";
 "Sağ:" = "Sağ:";
 "Sekmeyi Kapat" = "Sekmeyi Kapat";
+"Sekmeyi Kilitle / Kilidi Aç" = "Sekmeyi Kilitle / Kilidi Aç";
 "Sekmeyi kapat" = "Sekmeyi kapat";
 "Seçili kanalda {0} sürümünden daha yeni bir sürüm yok." = "Seçili kanalda {0} sürümünden daha yeni bir sürüm yok.";
 "Seçili İşi İptal Et" = "Seçili İşi İptal Et";
@@ -261,6 +300,7 @@
 "Total Command — Ayarlar" = "Total Command — Ayarlar";
 "Total Command — Dosya Yöneticisi" = "Total Command — Dosya Yöneticisi";
 "Total Command — İşlem Kuyruğu" = "Total Command — İşlem Kuyruğu";
+"Total Commander uyumlu CRC32 doğrulama dosyası (.crc) oluştur" = "Total Commander uyumlu CRC32 doğrulama dosyası (.crc) oluştur";
 "TÜMÜ BÜYÜK" = "TÜMÜ BÜYÜK";
 "Tümünü Seç" = "Tümünü Seç";
 "Uygula" = "Uygula";
@@ -301,18 +341,32 @@
 "Yeniden adlandırmak için dosya seçin." = "Yeniden adlandırmak için dosya seçin.";
 "Yeniden adlandır…" = "Yeniden adlandır…";
 "Yenile" = "Yenile";
-"Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}" = "Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}";
+"Yol: {0}
+Boyut: {1} bayt
+Değiştirilme: {2}
+İzinler: {3}" = "Yol: {0}
+Boyut: {1} bayt
+Değiştirilme: {2}
+İzinler: {3}";
 "Yolu Kopyala" = "Yolu Kopyala";
 "Yolu kopyala" = "Yolu kopyala";
 "Yükleme iptal edildi." = "Yükleme iptal edildi.";
 "Yükleniyor: {0}" = "Yükleniyor: {0}";
-"Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz.";
+"Yüklü sürüm: {0}.
+Önizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Yüklü sürüm: {0}.
+Önizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz.";
 "ZIP Oluştur…" = "ZIP Oluştur…";
 "ZIP ve 7z oluşturma, sistem arşiv motoruyla çıkarma. Arşiv içinde gezinme geçici bir klasör kullanır; değişiklikler özgün arşive geri yazılmaz." = "ZIP ve 7z oluşturma, sistem arşiv motoruyla çıkarma. Arşiv içinde gezinme geçici bir klasör kullanır; değişiklikler özgün arşive geri yazılmaz.";
 "ZIP · yaygın uyumluluk" = "ZIP · yaygın uyumluluk";
 "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir." = "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir.";
 "macOS ile aynı" = "macOS ile aynı";
-"macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama." = "macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama.";
+"macOS için çift panelli dosya yöneticisi.
+© 2026 Ferdi Sahin · GNU GPL sürüm 3
+Bu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.
+Total Commander’dan esinlenen bağımsız uygulama." = "macOS için çift panelli dosya yöneticisi.
+© 2026 Ferdi Sahin · GNU GPL sürüm 3
+Bu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.
+Total Commander’dan esinlenen bağımsız uygulama.";
 "tümü küçük" = "tümü küçük";
 "{0} arşivi oluştur" = "{0} arşivi oluştur";
 "{0} dosya yeniden adlandırılacak." = "{0} dosya yeniden adlandırılacak.";
@@ -320,6 +374,7 @@
 "{0} dosyanın adı hedefte kullanılıyor." = "{0} dosyanın adı hedefte kullanılıyor.";
 "{0} dosyayı yeniden adlandır" = "{0} dosyayı yeniden adlandır";
 "{0} farklılık · {1} eklenen · {2} silinen · {3} değişen" = "{0} farklılık · {1} eklenen · {2} silinen · {3} değişen";
+"{0} parça bulundu ({1})" = "{0} parça bulundu ({1})";
 "{0} sonuç (en fazla {1})" = "{0} sonuç (en fazla {1})";
 "{0} çalışan · {1} bekleyen · {2} hatalı{3}" = "{0} çalışan · {1} bekleyen · {2} hatalı{3}";
 "{0} öğe tarandı" = "{0} öğe tarandı";
@@ -341,11 +396,13 @@
 "Çöpe taşı…" = "Çöpe taşı…";
 "Çık" = "Çık";
 "Çıkar" = "Çıkar";
+"Çıktı Dosyası:" = "Çıktı Dosyası:";
 "Önce işlem kuyruğunu tamamlayın veya bekleyen işleri iptal edin." = "Önce işlem kuyruğunu tamamlayın veya bekleyen işleri iptal edin.";
 "Önce çalışan ve bekleyen işlemleri tamamlayın veya İşlem Kuyruğu’ndan iptal edin." = "Önce çalışan ve bekleyen işlemleri tamamlayın veya İşlem Kuyruğu’ndan iptal edin.";
 "Önceki Fark" = "Önceki Fark";
 "Önizle" = "Önizle";
 "Önizleme sürümlerini de bildir" = "Önizleme sürümlerini de bildir";
+"Özel Boyut" = "Özel Boyut";
 "Üst klasör" = "Üst klasör";
 "Üst klasöre çık" = "Üst klasöre çık";
 "İkili (Binary) dosyalar farklı." = "İkili (Binary) dosyalar farklı.";

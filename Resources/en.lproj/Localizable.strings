@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
 " · Sıra duraklatıldı" = " · Queue paused";
 "* herhangi bir metin, ? tek karakter." = "* matches any text; ? matches one character.";
+"1 GB" = "1 GB";
 "1.000 sonuç" = "1,000 results";
+"1.44 MB (3.5 inç Disket)" = "1.44 MB (3.5-inch Floppy)";
+"100 MB (ZIP disk)" = "100 MB (ZIP disk)";
 "100 sonuç" = "100 results";
 "11 punto" = "11 pt";
 "12 punto" = "12 pt";
 "13 punto" = "13 pt";
 "14 punto" = "14 pt";
 "15 punto" = "15 pt";
+"250 MB (ZIP disk)" = "250 MB (ZIP disk)";
+"4.7 GB (DVD)" = "4.7 GB (DVD)";
 "5.000 sonuç" = "5,000 results";
+"650 MB (CD-ROM)" = "650 MB (CD-ROM)";
+"700 MB (CD-ROM)" = "700 MB (CD-ROM)";
 "7z Oluştur…" = "Create 7z…";
 "7z · 7-Zip biçimi" = "7z · 7-Zip format";
 "Ad" = "Name";
@@ -47,6 +54,7 @@
 "Ağ" = "Network";
 "Ağ sunucusuna bağlan" = "Connect to a network server";
 "Basamak:" = "Digits:";
+"Bayt" = "Bytes";
 "Bağlan" = "Connect";
 "Bağlantı Adı:" = "Connection Name:";
 "Bağlantıyı Kes" = "Disconnect";
@@ -57,16 +65,29 @@
 "Belgeler" = "Documents";
 "Bilgi Al" = "Get Info";
 "Bir klasör kendi içine kopyalanamaz veya taşınamaz." = "A folder cannot be copied or moved into itself.";
+"Birleştir" = "Combine";
+"Birleştirilecek parça bulunamadı." = "No parts found to combine.";
+"Birleştiriliyor: {0}" = "Combining: {0}";
+"Birleştirme işlemi iptal edildi." = "Combining cancelled.";
+"Birleştirmek için .001 uzantılı bir parça dosyası seçin." = "Select a .001 part file to combine.";
 "Bitti" = "Done";
 "Boyut" = "Size";
+"Boş dosya bölünemez." = "Empty files cannot be split.";
 "Boşluk tuşuyla Quick Look önizleme" = "Use Space for Quick Look preview";
 "Bu Klasörü Ekle" = "Add This Folder";
 "Bu adda bir dosya zaten var." = "A file with this name already exists.";
-"Bu bir önizleme sürümüdür.\n" = "This is a preview release.\n";
+"Bu bir önizleme sürümüdür.
+" = "This is a preview release.
+";
 "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz." = "Wait for the queue to finish before this operation. Copy and move jobs can be added to the queue.";
 "Bu seçenek kapalıysa arşiv macOS’un varsayılan uygulamasıyla açılır. Arşiv menüsünden ZIP veya 7z biçimini ayrıca seçebilirsiniz. Şifreli arşivler bu sürümde desteklenmez." = "When disabled, archives open in the default macOS application. You can also choose ZIP or 7z from the Archive menu. Encrypted archives are not supported in this release.";
+"Böl" = "Split";
+"Bölme işlemi iptal edildi." = "Splitting cancelled.";
+"Bölünüyor: {0}" = "Splitting: {0}";
 "Büyük simgeler" = "Large icons";
 "Büyük/Küçük Harf Duyarlı" = "Case Sensitive";
+"CRC32 doğrulama dosyasını (.crc) kontrol et" = "Verify CRC32 checksum file (.crc)";
+"CRC32 doğrulama hatası! Beklenen: {0}, Hesaplanan: {1}" = "CRC32 verification error! Expected: {0}, Calculated: {1}";
 "Daha Sonra" = "Later";
 "Desene Göre Seç…" = "Select by Pattern…";
 "Desteklenen arşivler: ZIP, 7z, RAR, TAR, GZ, BZ2, XZ." = "Supported archives: ZIP, 7z, RAR, TAR, GZ, BZ2, XZ.";
@@ -87,6 +108,11 @@
 "Dosya İçeriğini Karşılaştır…" = "Compare by Content…";
 "Dosyalar" = "Files";
 "Dosyalar birebir aynı." = "Files are identical.";
+"Dosyaları Birleştir" = "Combine Files";
+"Dosyaları Birleştir…" = "Combine Files…";
+"Dosyayı Böl…" = "Split File…";
+"Dosyayı Parçalara Böl" = "Split File into Parts";
+"Dosyayı bölmek için tek bir dosya seçin." = "Select a single file to split.";
 "Duraklatma, sıradaki işin başlamasını bekletir. Çalışan dosya işlemi tamamlanır. Geçmişi temizlemek dosyaları silmez." = "Pausing holds the next job. The current file operation finishes first. Clearing history does not delete files.";
 "Durum" = "Status";
 "Düzen" = "Edit";
@@ -142,7 +168,9 @@
 "Görseller, PDF ve videolar için küçük resim üret" = "Generate thumbnails for images, PDFs and videos";
 "Görünüm" = "Appearance";
 "Güncelle: " = "Update: ";
-"Güncelleme kontrolü tamamlanamadı.\n" = "The update check failed.\n";
+"Güncelleme kontrolü tamamlanamadı.
+" = "The update check failed.
+";
 "Güncellemeler" = "Updates";
 "Güncellemeleri Kontrol Et…" = "Check for Updates…";
 "Günde bir" = "Daily";
@@ -150,6 +178,7 @@
 "Harf Durumu:" = "Case:";
 "Hata" = "Error";
 "Hazır" = "Ready";
+"Hedef Klasör:" = "Destination Directory:";
 "Hedef zaten var: {0}" = "Destination already exists: {0}";
 "Hedefe eşitle: {0} değişiklik" = "Sync to destination · Changes: {0}";
 "Hedefte bulunan dosyalar atlandı." = "Files already at the destination were skipped.";
@@ -170,11 +199,17 @@
 "Karşılaştırılacak İkinci Dosyayı Seçin" = "Select Second File to Compare";
 "Kaydet" = "Save";
 "Kaynak / Hedef" = "Source / Destination";
+"Kaynak Dosya:" = "Source File:";
 "Kaynak Kod" = "Source Code";
 "Kaynak ve hedef klasör aynı." = "The source and destination folder are the same.";
-"Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Source: {0}\nDestination: {1}\nCompares size and date. Extra destination files are not removed. Previous versions of replaced files are preserved with a .totalcommand-backup suffix.";
+"Kaynak: {0}
+Hedef: {1}
+Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Source: {0}
+Destination: {1}
+Compares size and date. Extra destination files are not removed. Previous versions of replaced files are preserved with a .totalcommand-backup suffix.";
 "Kayıtlı Sunucular" = "Saved Sites";
 "Kes" = "Cut";
+"Kilitli sekmeler kapatılamaz." = "Locked tabs cannot be closed.";
 "Klasör" = "Folder";
 "Klasör Aç" = "Open Folder";
 "Klasör Aç…" = "Open Folder…";
@@ -206,6 +241,9 @@
 "Otomatik kontrol" = "Automatic checks";
 "Panelleri Değiştir" = "Swap Panels";
 "Panelleri Karşılaştır" = "Compare Panels";
+"Parça Boyutu:" = "Chunk Size:";
+"Parça Sayısı:" = "Part Count:";
+"Parça boyutu sıfırdan büyük olmalıdır." = "Chunk size must be greater than zero.";
 "Port:" = "Port:";
 "Protokol:" = "Protocol:";
 "Rahat · 30 pt" = "Comfortable · 30 pt";
@@ -220,6 +258,7 @@
 "Sağ panel etkin → Hedef: sol panel" = "Right panel active → Destination: left panel";
 "Sağ:" = "Right:";
 "Sekmeyi Kapat" = "Close Tab";
+"Sekmeyi Kilitle / Kilidi Aç" = "Lock / Unlock Tab";
 "Sekmeyi kapat" = "Close tab";
 "Seçili kanalda {0} sürümünden daha yeni bir sürüm yok." = "No release newer than {0} is available on the selected channel.";
 "Seçili İşi İptal Et" = "Cancel Selected Job";
@@ -261,6 +300,7 @@
 "Total Command — Ayarlar" = "Total Command — Settings";
 "Total Command — Dosya Yöneticisi" = "Total Command — File Manager";
 "Total Command — İşlem Kuyruğu" = "Total Command — Operation Queue";
+"Total Commander uyumlu CRC32 doğrulama dosyası (.crc) oluştur" = "Create Total Commander-compatible CRC32 checksum file (.crc)";
 "TÜMÜ BÜYÜK" = "UPPERCASE";
 "Tümünü Seç" = "Select All";
 "Uygula" = "Apply";
@@ -301,18 +341,32 @@
 "Yeniden adlandırmak için dosya seçin." = "Select files to rename.";
 "Yeniden adlandır…" = "Rename…";
 "Yenile" = "Refresh";
-"Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}" = "Path: {0}\nSize: {1} bytes\nModified: {2}\nPermissions: {3}";
+"Yol: {0}
+Boyut: {1} bayt
+Değiştirilme: {2}
+İzinler: {3}" = "Path: {0}
+Size: {1} bytes
+Modified: {2}
+Permissions: {3}";
 "Yolu Kopyala" = "Copy Path";
 "Yolu kopyala" = "Copy path";
 "Yükleme iptal edildi." = "Upload cancelled.";
 "Yükleniyor: {0}" = "Uploading: {0}";
-"Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Installed version: {0}.\nYou can include preview releases in Settings → Updates.";
+"Yüklü sürüm: {0}.
+Önizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Installed version: {0}.
+You can include preview releases in Settings → Updates.";
 "ZIP Oluştur…" = "Create ZIP…";
 "ZIP ve 7z oluşturma, sistem arşiv motoruyla çıkarma. Arşiv içinde gezinme geçici bir klasör kullanır; değişiklikler özgün arşive geri yazılmaz." = "Create ZIP and 7z archives and extract with the system archive engine. Browsing an archive uses a temporary folder; changes are not written back to the original archive.";
 "ZIP · yaygın uyumluluk" = "ZIP · broad compatibility";
 "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir." = "[N] base name · [E] extension · [C] counter (starts at 1). A preview follows.";
 "macOS ile aynı" = "Same as macOS";
-"macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama." = "A dual-pane file manager for macOS.\n© 2026 Ferdi Sahin · GNU GPL version 3\nYou may distribute and modify this free software under GPLv3. No warranty is provided.\nAn independent application inspired by Total Commander.";
+"macOS için çift panelli dosya yöneticisi.
+© 2026 Ferdi Sahin · GNU GPL sürüm 3
+Bu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.
+Total Commander’dan esinlenen bağımsız uygulama." = "A dual-pane file manager for macOS.
+© 2026 Ferdi Sahin · GNU GPL version 3
+You may distribute and modify this free software under GPLv3. No warranty is provided.
+An independent application inspired by Total Commander.";
 "tümü küçük" = "lowercase";
 "{0} arşivi oluştur" = "Create {0} archive";
 "{0} dosya yeniden adlandırılacak." = "{0} files will be renamed.";
@@ -320,6 +374,7 @@
 "{0} dosyanın adı hedefte kullanılıyor." = "Names already in use at the destination: {0}.";
 "{0} dosyayı yeniden adlandır" = "Rename selection ({0})";
 "{0} farklılık · {1} eklenen · {2} silinen · {3} değişen" = "{0} differences · {1} added · {2} deleted · {3} modified";
+"{0} parça bulundu ({1})" = "{0} parts found ({1})";
 "{0} sonuç (en fazla {1})" = "Results: {0} (limit: {1})";
 "{0} çalışan · {1} bekleyen · {2} hatalı{3}" = "{0} running · {1} pending · {2} failed{3}";
 "{0} öğe tarandı" = "Items scanned: {0}";
@@ -341,11 +396,13 @@
 "Çöpe taşı…" = "Move to Trash…";
 "Çık" = "Quit";
 "Çıkar" = "Extract";
+"Çıktı Dosyası:" = "Output File:";
 "Önce işlem kuyruğunu tamamlayın veya bekleyen işleri iptal edin." = "Finish the operation queue or cancel pending jobs first.";
 "Önce çalışan ve bekleyen işlemleri tamamlayın veya İşlem Kuyruğu’ndan iptal edin." = "Finish running and pending jobs, or cancel them in Operation Queue first.";
 "Önceki Fark" = "Previous Difference";
 "Önizle" = "Preview";
 "Önizleme sürümlerini de bildir" = "Include preview releases";
+"Özel Boyut" = "Custom Size";
 "Üst klasör" = "Parent folder";
 "Üst klasöre çık" = "Go to parent folder";
 "İkili (Binary) dosyalar farklı." = "Binary files are different.";

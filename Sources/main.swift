@@ -50,6 +50,7 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     var archiveSource: URL?
     var updating = false
     var remoteSession: RemoteSession?
+    var lockedTabs: Set<Int> = []
     let path = NSTextField(), search = NSSearchField(), tabs = NSSegmentedControl(), table = DropTable(), grid = DropGrid()
     let listScroll = NSScrollView(), gridScroll = NSScrollView(), body = NSView()
     let status = NSTextField(labelWithString: ""), disk = NSPopUpButton(), mode = NSSegmentedControl(labels: [L("Liste"), L("Simgeler")], trackingMode: .selectOne, target: nil, action: nil)
@@ -106,9 +107,46 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
         if !valid.isEmpty { paths = valid; tabIndex = 0; location = paths[0]; updateTabs(); reload() }
     }
     func save(_ key: String) { UserDefaults.standard.set(showHidden, forKey: key + "Hidden"); UserDefaults.standard.set(mode.selectedSegment, forKey: key + "Mode"); UserDefaults.standard.set(paths.filter { !$0.path.contains("TotalCommand-Archive-") }.map(\.path), forKey: key) }
-    func updateTabs() { tabs.segmentCount = paths.count; for (i, u) in paths.enumerated() { tabs.setLabel(u.lastPathComponent.isEmpty ? "/" : u.lastPathComponent, forSegment: i); tabs.setWidth(min(150, max(60, Double(u.lastPathComponent.count) * 7 + 18)), forSegment: i) }; tabs.selectedSegment = tabIndex }
+    func updateTabs() {
+        tabs.segmentCount = paths.count
+        for (i, u) in paths.enumerated() {
+            let baseLabel = u.lastPathComponent.isEmpty ? "/" : u.lastPathComponent
+            let isLocked = lockedTabs.contains(i)
+            let displayLabel = isLocked ? "🔒 \(baseLabel)" : baseLabel
+            tabs.setLabel(displayLabel, forSegment: i)
+            tabs.setWidth(min(160, max(60, Double(displayLabel.count) * 7 + 18)), forSegment: i)
+        }
+        tabs.selectedSegment = tabIndex
+    }
     @objc func newTab() { paths.append(location); tabIndex = paths.count - 1; updateTabs(); activated?() }
-    @objc func closeTab() { guard paths.count > 1 else { return }; paths.remove(at: tabIndex); tabIndex = min(tabIndex, paths.count - 1); location = paths[tabIndex]; history = []; future = []; archiveRoot = nil; search.stringValue = ""; updateTabs(); reload(); activated?() }
+    @objc func closeTab() {
+        guard paths.count > 1 else { return }
+        if lockedTabs.contains(tabIndex) {
+            report?(PanelError(message: L("Kilitli sekmeler kapatılamaz.")))
+            return
+        }
+        paths.remove(at: tabIndex)
+        var newLocked: Set<Int> = []
+        for idx in lockedTabs {
+            if idx < tabIndex { newLocked.insert(idx) }
+            else if idx > tabIndex { newLocked.insert(idx - 1) }
+        }
+        lockedTabs = newLocked
+        tabIndex = min(tabIndex, paths.count - 1)
+        location = paths[tabIndex]
+        history = []; future = []; archiveRoot = nil; search.stringValue = ""
+        updateTabs()
+        reload()
+        activated?()
+    }
+    func toggleLockTab() {
+        if lockedTabs.contains(tabIndex) {
+            lockedTabs.remove(tabIndex)
+        } else {
+            lockedTabs.insert(tabIndex)
+        }
+        updateTabs()
+    }
     @objc func changeTab() { tabIndex = tabs.selectedSegment; location = paths[tabIndex]; history = []; future = []; archiveRoot = nil; search.stringValue = ""; reload(); activated?() }
     @objc func switchViewMode() { let urls = gridMode ? table.selectedRowIndexes.compactMap { entries.indices.contains($0) && !entries[$0].isParent ? entries[$0].url : nil } : grid.selectionIndexPaths.compactMap { entries.indices.contains($0.item) && !entries[$0.item].isParent ? entries[$0.item].url : nil }; gridScroll.isHidden = !gridMode; listScroll.isHidden = gridMode; select(urls); activated?() }
     @objc func pickDisk() { guard let u = disk.selectedItem?.representedObject as? URL else { return }; navigate(u); activated?() }
@@ -175,6 +213,15 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     }
     func navigate(_ url: URL, record: Bool = true) {
         guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { report?(PanelError(message: L("Klasör bulunamadı: {0}", url.path))); path.stringValue = location.path; return }
+        if lockedTabs.contains(tabIndex) && url != location {
+            paths.append(url)
+            tabIndex = paths.count - 1
+            location = url
+            history = []; future = []; archiveRoot = nil; search.stringValue = ""
+            updateTabs()
+            reload()
+            return
+        }
         if record, location != url { history.append(location); future = [] }
         location = url; paths[tabIndex] = url; search.stringValue = ""; table.deselectAll(nil); grid.deselectAll(nil); updateTabs(); reload()
     }
@@ -286,6 +333,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     var quickConnectController: QuickConnectController?
     var diffController: DiffWindowController?
     var multiRenameController: MultiRenameWindowController?
+    var splitController: SplitWindowController?
+    var combineController: CombineWindowController?
     var job: JobState? { operations.current?.control }
     var process: Process?; var previewURLs: [URL] = []; var temporary: [URL] = []
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -344,10 +393,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             for (label, action, key) in items { let child = NSMenuItem(title: label, action: action, keyEquivalent: key); child.target = self; menu.addItem(child) }
         }
         submenu("Total Command", [(L("Total Command Hakkında"), #selector(about), ""), (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), ""), (L("Ayarlar…"), #selector(settings), ","), (L("Çık"), #selector(quit), "q")])
-        submenu(L("Dosyalar"), [(L("Klasör Aç…"), #selector(chooseFolder), "o"), (L("Yeni Klasör…"), #selector(newFolder), ""), (L("Yeni Metin Dosyası…"), #selector(newFile), ""), (L("Yeniden Adlandır…"), #selector(rename), ""), (L("Toplu Yeniden Adlandır…"), #selector(batchRename), "m"), (L("Bilgi Al"), #selector(info), "i"), (L("Finder’da Göster"), #selector(reveal), ""), (L("Çöpe Taşı…"), #selector(trash), "")])
+        submenu(L("Dosyalar"), [(L("Klasör Aç…"), #selector(chooseFolder), "o"), (L("Yeni Klasör…"), #selector(newFolder), ""), (L("Yeni Metin Dosyası…"), #selector(newFile), ""), (L("Yeniden Adlandır…"), #selector(rename), ""), (L("Toplu Yeniden Adlandır…"), #selector(batchRename), "m"), (L("Dosyayı Böl…"), #selector(splitFile), ""), (L("Dosyaları Birleştir…"), #selector(combineFiles), ""), (L("Bilgi Al"), #selector(info), "i"), (L("Finder’da Göster"), #selector(reveal), ""), (L("Çöpe Taşı…"), #selector(trash), "")])
         submenu(L("Seçim"), [(L("Tümünü Seç"), #selector(selectAll), "a"), (L("Seçimi Tersine Çevir"), #selector(invert), ""), (L("Desene Göre Seç…"), #selector(selectPattern), ""), (L("Seçimi Temizle"), #selector(clearSelection), "")])
         submenu(L("Komutlar"), [(L("İşlem Kuyruğu…"), #selector(showQueue), ""), (L("Kopyala"), #selector(copyFiles), ""), (L("Taşı"), #selector(moveFiles), ""), (L("Dosya Ara…"), #selector(find), "f"), (L("Panelleri Karşılaştır"), #selector(compare), ""), (L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent), ""), (L("Etkin Panelden Hedefe Eşitle…"), #selector(sync), ""), (L("Panelleri Değiştir"), #selector(swap), "u"), (L("Terminal’de Aç"), #selector(terminal), ""), (L("Yolu Kopyala"), #selector(copyPath), "")])
-        submenu(L("Görünüm"), [(L("Yeni Sekme"), #selector(newTab), "t"), (L("Sekmeyi Kapat"), #selector(closeTab), "w"), (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden), "."), (L("Yenile"), #selector(refresh), "r"), (L("Önizle"), #selector(preview), "y")])
+        submenu(L("Görünüm"), [(L("Yeni Sekme"), #selector(newTab), "t"), (L("Sekmeyi Kapat"), #selector(closeTab), "w"), (L("Sekmeyi Kilitle / Kilidi Aç"), #selector(toggleLockTab), ""), (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden), "."), (L("Yenile"), #selector(refresh), "r"), (L("Önizle"), #selector(preview), "y")])
         submenu(L("Ağ"), [(L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager), "F"), (L("Hızlı Bağlan…"), #selector(showQuickConnect), "N"), (L("Bağlantıyı Kes"), #selector(disconnectRemote), ""), (L("Sunucuya Bağlan…"), #selector(connectServer), "k")])
         submenu(L("Favoriler"), [(L("Bu Klasörü Ekle"), #selector(addBookmark), "d"), (L("Favori Klasöre Git…"), #selector(bookmarks), "b")])
         submenu(L("Arşiv"), [(L("ZIP Oluştur…"), #selector(packZIP), ""), (L("7z Oluştur…"), #selector(pack7z), ""), (L("Arşivi Çıkar"), #selector(unpack), ""), (L("Arşivde Gezin"), #selector(browse), "")])
@@ -455,6 +504,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     @objc func hidden() { active.showHidden.toggle(); active.reload() }
     @objc func newTab() { active.newTab() }
     @objc func closeTab() { active.closeTab() }
+    @objc func toggleLockTab() { active.toggleLockTab() }
     @objc func selectAll() { if let text = NSApp.keyWindow?.firstResponder as? NSTextView { text.selectAll(nil) } else { active.select(active.entries.map(\.url)) } }
     @objc func clearSelection() { active.select([]) }
     @objc func invert() { let set = Set(active.selected); active.select(active.entries.filter { !set.contains($0.url) }.map(\.url)) }
@@ -636,6 +686,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         multiRenameController = mr
         mr.showWindow(nil)
         mr.window?.makeKeyAndOrderFront(nil)
+    }
+    @objc func splitFile() {
+        guard active.selected.count == 1, let file = active.selected.first else {
+            show(PanelError(message: L("Dosyayı bölmek için tek bir dosya seçin.")))
+            return
+        }
+        let targetDir = other.location
+        let splitWin = SplitWindowController(sourceURL: file, destinationDir: targetDir)
+        splitWin.onStartSplit = { [weak self] source, dest, chunkSize, makeCRC in
+            guard let self else { return }
+            self.startJob(L("Bölünüyor: {0}", source.lastPathComponent), queued: true) { state, progress in
+                _ = try FileSplitter.split(source: source, destinationDir: dest, chunkSize: chunkSize, generateCRC: makeCRC, control: state) { done, total, name in
+                    progress(Int(done), Int(total), name)
+                }
+            }
+        }
+        splitController = splitWin
+        splitWin.showWindow(nil)
+        splitWin.window?.makeKeyAndOrderFront(nil)
+    }
+    @objc func combineFiles() {
+        guard active.selected.count == 1, let file = active.selected.first else {
+            show(PanelError(message: L("Birleştirmek için .001 uzantılı bir parça dosyası seçin.")))
+            return
+        }
+        let detected = FileSplitter.detectParts(firstPart: file)
+        guard !detected.parts.isEmpty else {
+            show(PanelError(message: L("Birleştirmek için .001 uzantılı bir parça dosyası seçin.")))
+            return
+        }
+        let targetDir = other.location
+        let combineWin = CombineWindowController(parts: detected.parts, originalName: detected.originalName, destinationDir: targetDir, crcURL: detected.crcURL)
+        combineWin.onStartCombine = { [weak self] parts, outName, dest, crcURL, verify in
+            guard let self else { return }
+            self.startJob(L("Birleştiriliyor: {0}", outName), queued: true) { state, progress in
+                _ = try FileSplitter.combine(parts: parts, originalName: outName, destinationDir: dest, crcURL: crcURL, verifyCRC: verify, control: state) { done, total, name in
+                    progress(Int(done), Int(total), name)
+                }
+            }
+        }
+        combineController = combineWin
+        combineWin.showWindow(nil)
+        combineWin.window?.makeKeyAndOrderFront(nil)
     }
     @objc func trash() {
         let urls = active.selected; guard !urls.isEmpty else { return }
