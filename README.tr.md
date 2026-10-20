@@ -24,9 +24,9 @@ Kaynaklardan derlemek için Xcode komut satırı araçlarıyla `./build.sh`, tes
 
 Menüden **Total Command → Güncellemeleri Kontrol Et…** veya **Ayarlar → Güncellemeler** üzerinden yeni sürüm kontrolü yapılabilir. İsteğe bağlı günlük/haftalık kontrol ve önizleme kanalı vardır. Otomatik kontrol varsayılan olarak kapalıdır. Yeni sürüm bulunduğunda GitHub indirme sayfası açılır; uygulama kendini otomatik olarak değiştirmez.
 
-## Geliştirmedeki 0.2.3
+## Sonraki sürüm: 0.2.4
 
-- **Yerleşik FTP, FTPS ve SFTP İstemcisi**: Bağlantı Yöneticisi (`Cmd+F`), Hızlı Bağlan (`Cmd+N`), çift panel üzerinden sunucu içi gezinme, F5 ile arka planda indirme ve yükleme.
+- **Yerleşik FTP, FTPS ve SFTP İstemcisi**: Bağlantı Yöneticisi (`Cmd+Shift+F`), Hızlı Bağlan (`Cmd+Shift+N`), çift panel üzerinden sunucu içi gezinme, F5 ile arka planda indirme ve yükleme.
 - **Dosya İçeriği Karşılaştırma (Compare by Content / Diff)**: Yan yana çift sütunlu senkronize kaydırma, satır numaraları, renkli fark vurgusu ve ikili (binary) offset/hash karşılaştırma.
 - **Gelişmiş Çoklu Yeniden Adlandırma (Multi-Rename Tool / `Cmd+M`)**: Regex, sayaç (`[C]`), harf durumu dönüşümleri ve canlı önizleme tablosu.
 - **Hızlı Arama & Filtreleme (Quick Search)**: Klavyeden harf yazmaya başlayınca doğrudan arama kutusuna ve ilk eşleşen satıra odaklanma.
@@ -81,11 +81,11 @@ F2 yeniden adlandırır; F3 önizler; F4 düzenleyicide açar; F5 kopyalar; F6 t
 
 ## İşlem davranışları ve sınırlar
 
-Aynı adlı dosyalarda varsayılan davranış sormak ve iki kopyayı da korumaktır. Hedefteki dosya otomatik ezilmez. Eşitleme kaynak panelden hedefe tek yönlüdür, boyut/tarihe bakar; hedefteki fazlalıkları silmez. Güncellenen hedeflerin önceki halleri `.totalcommand-backup` ekli dosyalarda tutulur. İçerik/hash karşılaştırması yapılmaz.
+Aynı adlı dosyalarda varsayılan davranış sormak ve iki kopyayı da korumaktır. Hedefteki dosya otomatik ezilmez. Eşitleme kaynak panelden hedefe tek yönlüdür, boyut/tarihe bakar; hedefteki fazlalıkları silmez. Güncellenen hedeflerin önceki halleri `.totalcommand-backup` ekli dosyalarda tutulur. Eski panel karşılaştırması boyut/tarih kullanır; gelişmiş eşitleme aracı iki yönlü çalışabilir ve isteğe bağlı SHA-256 içerik karşılaştırması sunar.
 
 Kopyalama ve taşıma işleri sıraya eklenir; aynı anda tek iş çalışır. İşlem Kuyruğu penceresinden bekleyen işler iptal edilebilir, sıra duraklatılıp sürdürülebilir ve bu oturumun son 100 tamamlanan iş kaydı görülebilir. Duraklatma, çalışan işi durdurmaz; sıradakinin başlamasını bekletir. Diğer işlemler için kuyruğun boşalması gerekir. İptal, kopyalama/taşımada dosyalar arasında kontrol edilir; büyük tek bir dosyanın bitmesini bekleyebilir. İptal edilmiş bir klasör kopyasının geçici hedefi temizlenir; önceki tamamlanmış dosyalar korunur. İşlem geçmişi oturumla sınırlıdır; uygulama kapanınca kaybolur. Tüm işlemi geri alma yoktur. Arama dosya adlarına bakar, içerik aramaz ve uygulama paketlerini taramaz.
 
-Bu sürüm Total Commander ile tam özellik eşitliğine sahip değildir. Eklenti sistemi, şifreli/parçalı arşiv yönetimi, arşive geri yazma, dosya bölme/birleştirme ve iki yönlü senkronizasyon henüz yoktur.
+Bu sürüm Total Commander ile tam özellik eşitliğine sahip değildir. Eklenti sistemi, şifreli/parçalı arşiv yönetimi, arşive geri yazma henüz yoktur.
 
 ## Doğrulama
 
@@ -97,3 +97,7 @@ Arayüzde çift panel, liste/simge görünümü, sekme açma/kapatma, kopyalama,
 
 Copyright © 2026 Ferdi Sahin. **GPL-3.0-only**; tam metin [LICENSE](LICENSE). Dağıtılan değiştirilmiş sürümlerin ilgili kaynakları da GPLv3 koşullarıyla sunulmalıdır. Yazılım garanti verilmeden sağlanır.
 
+
+## 0.2.4 yayın hazırlığı
+
+Dosya bölme/birleştirme (CRC32), kilitli sekmeler, SHA-256 içerik karşılaştırmalı iki yönlü eşitleme, checksum oluşturma/doğrulama ve pencere içi menü/araç/komut çubuğu eklendi. Uzak bağlantıların canlı FTP/FTPS/SFTP sunucularındaki kapsamlı testleri tamamlanmadı. FTPS, 21. portta açık TLS yükseltmesi kullanır ve sunucu sertifikasını doğrular. Kayıtlı sunucu parolaları henüz Keychain yerine uygulama tercihlerinde saklanır; kayıtlı SFTP bağlantılarında SSH anahtarı tercih edin.

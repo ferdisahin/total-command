@@ -16,6 +16,9 @@ enum RemoteProtocol: String, Codable, CaseIterable {
         }
     }
 
+    // FTPS uses explicit TLS on port 21; curl ftps:// would imply immediate TLS.
+    var curlScheme: String { self == .ftps ? "ftp" : scheme }
+
     var scheme: String {
         switch self {
         case .sftp: return "sftp"
@@ -340,10 +343,10 @@ final class RemoteSession: @unchecked Sendable {
     }
 
     // MARK: - FTP / FTPS Engine
-    private func buildCurlBaseArgs() -> [String] {
+    func buildCurlBaseArgs() -> [String] {
         var args = ["-s", "--connect-timeout", "15"]
         if site.protocolType == .ftps {
-            args.append(contentsOf: ["--ssl-reqd", "--insecure"])
+            args.append(contentsOf: ["--ssl-reqd"])
         }
         if !site.username.isEmpty {
             let auth = site.password.isEmpty ? site.username : "\(site.username):\(site.password)"
@@ -360,7 +363,7 @@ final class RemoteSession: @unchecked Sendable {
             args.append(contentsOf: ["-Q", q])
         }
 
-        let scheme = site.protocolType == .ftps ? "ftps" : "ftp"
+        let scheme = site.protocolType.curlScheme
         let fullURL = "\(scheme)://\(site.host):\(site.port)/"
         args.append(fullURL)
 
@@ -385,7 +388,7 @@ final class RemoteSession: @unchecked Sendable {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
         var args = buildCurlBaseArgs()
 
-        let scheme = site.protocolType == .ftps ? "ftps" : "ftp"
+        let scheme = site.protocolType.curlScheme
         var cleanPath = path
         if !cleanPath.hasPrefix("/") { cleanPath = "/" + cleanPath }
         if !cleanPath.hasSuffix("/") { cleanPath += "/" }
@@ -419,7 +422,7 @@ final class RemoteSession: @unchecked Sendable {
         var args = buildCurlBaseArgs()
         args.append(contentsOf: ["-o", localURL.path])
 
-        let scheme = site.protocolType == .ftps ? "ftps" : "ftp"
+        let scheme = site.protocolType.curlScheme
         let p = remotePath.hasPrefix("/") ? remotePath : "/\(remotePath)"
         args.append("\(scheme)://\(site.host):\(site.port)\(p)")
 
@@ -452,7 +455,7 @@ final class RemoteSession: @unchecked Sendable {
         var args = buildCurlBaseArgs()
         args.append(contentsOf: ["-T", localURL.path])
 
-        let scheme = site.protocolType == .ftps ? "ftps" : "ftp"
+        let scheme = site.protocolType.curlScheme
         var cleanDir = remoteDir
         if !cleanDir.hasPrefix("/") { cleanDir = "/" + cleanDir }
         if !cleanDir.hasSuffix("/") { cleanDir += "/" }

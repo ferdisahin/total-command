@@ -35,9 +35,9 @@ BUILD_ARCHS='arm64 x86_64' ./build.sh
 
 Default development builds are ad-hoc signed. Public releases are separately signed and notarized.
 
-## In development: 0.2.3
+## Next release: 0.2.4
 
-- **Built-in FTP, FTPS, and SFTP Client**: Site Manager (`Cmd+F`), Quick Connect (`Cmd+N`), dual-pane remote navigation, and background queued transfer (F5).
+- **Built-in FTP, FTPS, and SFTP Client**: Site Manager (`Cmd+Shift+F`), Quick Connect (`Cmd+Shift+N`), dual-pane remote navigation, and background queued transfer (F5).
 - **Compare by Content (Diff)**: Side-by-side synchronized view, line numbering, colored difference highlighting, and binary offset comparison.
 - **Advanced Multi-Rename Tool (`Cmd+M`)**: Regular expressions, counter tags (`[C]`), case conversions, and live two-column preview table.
 - **Quick Search & Filter**: Instant keystroke jump and live filtering in file lists.
@@ -45,7 +45,7 @@ Default development builds are ad-hoc signed. Public releases are separately sig
 - A pinned `[..]` parent-folder entry in both list and icon views. It ignores sorting and filtering, is excluded from file operations, and is hidden at the filesystem root.
 - A copy/move queue with pending-job cancellation, pause/resume between jobs, and session history including errors.
 
-These additions are not included in the published 0.2.2 download yet.
+The upcoming 0.2.4 build also includes file splitting/combining with CRC32 checks, locked tabs, two-way synchronization with SHA-256 comparison, checksum generation/verification, and the updated in-window menu, toolbar and command prompt. These changes are not included in the published 0.2.2 download yet.
 
 ## File management
 
@@ -70,7 +70,7 @@ Double-clicking an archive opens its contents in a temporary folder. Edits are n
 
 ## Settings
 
-Open the Settings button, **Total Command → Ayarlar…**, or Command+,.
+Open the Settings button, **Total Command → Settings…**, or Command+,.
 
 | Section | Options |
 |---|---|
@@ -86,7 +86,7 @@ Settings save automatically. Reset preserves favorites and stored tabs. Restored
 
 ## Updates
 
-Use **Total Command → Güncellemeleri Kontrol Et…** or **Settings → Güncellemeler** to check GitHub releases. Automatic checks are off by default; daily or weekly checks and preview releases are optional. A new release opens its GitHub download page for user-initiated installation. The app does not replace itself automatically.
+Use **Total Command → Check for Updates…** or **Settings → Updates** to check GitHub releases. Automatic checks are off by default; daily or weekly checks and preview releases are optional. A new release opens its GitHub download page for user-initiated installation. The app does not replace itself automatically.
 
 ## Default shortcuts
 
@@ -94,11 +94,13 @@ F2 rename; F3 preview; F4 edit; F5 copy; F6 move; F7 new folder; F8 move to Tras
 
 ## Behavior and limitations
 
-Name collisions never overwrite a destination file automatically. The default asks before keeping both copies with numbered names. Synchronization runs from the active panel to the opposite panel, compares size/date, and does not remove extra destination files. Replaced targets are preserved with a `.totalcommand-backup` suffix. Content/hash comparison is not implemented.
+Name collisions never overwrite a destination file automatically. The default asks before keeping both copies with numbered names. Synchronization runs from the active panel to the opposite panel, compares size/date, and does not remove extra destination files. Replaced targets are preserved with a `.totalcommand-backup` suffix. The new two-way synchronization tool can also compare SHA-256 content hashes; the original panel comparison remains size/date based.
 
 Copy and move jobs run sequentially in the queue. Pausing holds the next job; it does not freeze the active job. Queued sources and destination paths are captured when the job is added. Files that disappear before execution cause a logged error; the next job can continue. Other commands require the queue to finish. Cancellation is checked between files and may wait for a large individual file. A cancelled folder copy's temporary destination is removed, while earlier completed files remain. Session history retains the last 100 finished jobs and is lost on exit. There is no full-operation undo or restart recovery.
 
-Search matches file names rather than contents and skips application bundles. Plugins, encrypted/split archives, archive writeback, file splitting/joining, and two-way synchronization are not implemented yet.
+Search matches file names rather than contents and skips application bundles. Plugins, encrypted/split archives, archive writeback are not implemented yet.
+
+Remote connections remain preview functionality: live FTP/FTPS/SFTP server coverage is incomplete. FTPS uses explicit TLS on port 21 and validates server certificates. Saved remote-site passwords are currently stored in application preferences, rather than Keychain; prefer SSH keys for saved SFTP sites.
 
 ## Validation
 

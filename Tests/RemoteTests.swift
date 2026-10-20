@@ -6,6 +6,7 @@ import Foundation
 final class RemoteTests {
     static func run() {
         testProtocolDefaults()
+        testFTPSTransport()
         testSiteSerialization()
         testUnixListingParser()
         testWindowsListingOrEdgeCases()
@@ -19,6 +20,16 @@ final class RemoteTests {
         assert(RemoteProtocol.sftp.scheme == "sftp", "SFTP scheme should be sftp")
         assert(RemoteProtocol.ftp.scheme == "ftp", "FTP scheme should be ftp")
         assert(RemoteProtocol.ftps.scheme == "ftps", "FTPS scheme should be ftps")
+    }
+
+    private static func testFTPSTransport() {
+        let site = RemoteSite(name: "FTPS test", protocolType: .ftps, host: "example.com", port: 21)
+        let args = RemoteSession(site: site).buildCurlBaseArgs()
+        assert(site.protocolType.curlScheme == "ftp")
+        assert(args.contains("--ssl-reqd"), "FTPS must require TLS")
+        assert(!args.contains("--insecure") && !args.contains("-k"), "FTPS must validate server certificates")
+        let plain = RemoteSite(name: "FTP test", protocolType: .ftp, host: "example.com", port: 21)
+        assert(!RemoteSession(site: plain).buildCurlBaseArgs().contains("--ssl-reqd"))
     }
 
     private static func testSiteSerialization() {
