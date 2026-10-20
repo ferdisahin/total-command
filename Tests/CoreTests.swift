@@ -11,6 +11,7 @@ import Foundation
         DiffTests.run()
         MultiRenameTests.run()
         FileSplitterTests.run()
+        SyncTests.run()
         let suite = "TotalCommand.Test." + UUID().uuidString
         Prefs.store = UserDefaults(suiteName: suite)!
         Prefs.register()

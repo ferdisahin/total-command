@@ -28,6 +28,7 @@
 "Adına göre filtrele" = "Filter by name";
 "Alt klasör aramasına gizli dosyaları dahil et" = "Include hidden files in recursive searches";
 "Alt klasörlerde dosya ara" = "Search in subfolders";
+"Alt klasörleri dahil et" = "Include subdirectories";
 "Ara" = "Search";
 "Ara:" = "Search:";
 "Arama" = "Search";
@@ -72,13 +73,12 @@
 "Birleştirmek için .001 uzantılı bir parça dosyası seçin." = "Select a .001 part file to combine.";
 "Bitti" = "Done";
 "Boyut" = "Size";
+"Boyut / Tarih" = "Size / Date";
 "Boş dosya bölünemez." = "Empty files cannot be split.";
 "Boşluk tuşuyla Quick Look önizleme" = "Use Space for Quick Look preview";
 "Bu Klasörü Ekle" = "Add This Folder";
 "Bu adda bir dosya zaten var." = "A file with this name already exists.";
-"Bu bir önizleme sürümüdür.
-" = "This is a preview release.
-";
+"Bu bir önizleme sürümüdür.\n" = "This is a preview release.\n";
 "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz." = "Wait for the queue to finish before this operation. Copy and move jobs can be added to the queue.";
 "Bu seçenek kapalıysa arşiv macOS’un varsayılan uygulamasıyla açılır. Arşiv menüsünden ZIP veya 7z biçimini ayrıca seçebilirsiniz. Şifreli arşivler bu sürümde desteklenmez." = "When disabled, archives open in the default macOS application. You can also choose ZIP or 7z from the Archive menu. Encrypted archives are not supported in this release.";
 "Böl" = "Split";
@@ -123,10 +123,12 @@
 "Eski Ad" = "Old Name";
 "Etkin Panelden Hedefe Eşitle…" = "Sync Active Panel to Destination…";
 "Etkin klasörde Terminal komutu çalıştır…" = "Run a shell command in the active folder…";
+"Eşit" = "Equal";
 "Eşitle" = "Synchronize";
 "Eşitleme iptal edildi. Tamamlanan değişiklikler korundu." = "Synchronization cancelled. Completed changes were preserved.";
 "Eşitleme planı hazırlanıyor" = "Preparing synchronization plan";
 "Eşitleme planı iptal edildi." = "Synchronization planning cancelled.";
+"Eşitlenecek işlem bulunamadı." = "No actions to synchronize.";
 "Eşitleniyor" = "Synchronizing";
 "F2–F8 kısayollarını etkinleştir" = "Enable F2–F8 shortcuts";
 "F3 Önizle" = "F3 Preview";
@@ -168,9 +170,7 @@
 "Görseller, PDF ve videolar için küçük resim üret" = "Generate thumbnails for images, PDFs and videos";
 "Görünüm" = "Appearance";
 "Güncelle: " = "Update: ";
-"Güncelleme kontrolü tamamlanamadı.
-" = "The update check failed.
-";
+"Güncelleme kontrolü tamamlanamadı.\n" = "The update check failed.\n";
 "Güncellemeler" = "Updates";
 "Güncellemeleri Kontrol Et…" = "Check for Updates…";
 "Günde bir" = "Daily";
@@ -202,11 +202,7 @@
 "Kaynak Dosya:" = "Source File:";
 "Kaynak Kod" = "Source Code";
 "Kaynak ve hedef klasör aynı." = "The source and destination folder are the same.";
-"Kaynak: {0}
-Hedef: {1}
-Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Source: {0}
-Destination: {1}
-Compares size and date. Extra destination files are not removed. Previous versions of replaced files are preserved with a .totalcommand-backup suffix.";
+"Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Source: {0}\nDestination: {1}\nCompares size and date. Extra destination files are not removed. Previous versions of replaced files are preserved with a .totalcommand-backup suffix.";
 "Kayıtlı Sunucular" = "Saved Sites";
 "Kes" = "Cut";
 "Kilitli sekmeler kapatılamaz." = "Locked tabs cannot be closed.";
@@ -215,6 +211,7 @@ Compares size and date. Extra destination files are not removed. Previous versio
 "Klasör Aç…" = "Open Folder…";
 "Klasör bulunamadı: {0}" = "Folder not found: {0}";
 "Klasörler bu ölçütlere göre aynı." = "The folders match by these criteria.";
+"Klasörleri Eşitle (Synchronize Dirs)" = "Synchronize Directories";
 "Klasörleri dosyalardan önce göster" = "Show folders before files";
 "Klavye" = "Keyboard";
 "Komut satırını göster" = "Show command bar";
@@ -254,12 +251,16 @@ Compares size and date. Extra destination files are not removed. Previous versio
 "Satır aralığı" = "Row spacing";
 "Sayaç" = "Counter";
 "Sayaç Ayarları:" = "Counter Settings:";
+"Sağ Dosya" = "Right File";
 "Sağ başlangıç klasörü" = "Right startup folder";
 "Sağ panel etkin → Hedef: sol panel" = "Right panel active → Destination: left panel";
 "Sağ:" = "Right:";
+"Sağa kopyala" = "Copy to right";
+"Sağdakini sil" = "Delete on right";
 "Sekmeyi Kapat" = "Close Tab";
 "Sekmeyi Kilitle / Kilidi Aç" = "Lock / Unlock Tab";
 "Sekmeyi kapat" = "Close tab";
+"Senkronize Et" = "Synchronize";
 "Seçili kanalda {0} sürümünden daha yeni bir sürüm yok." = "No release newer than {0} is available on the selected channel.";
 "Seçili İşi İptal Et" = "Cancel Selected Job";
 "Seçim" = "Selection";
@@ -268,10 +269,13 @@ Compares size and date. Extra destination files are not removed. Previous versio
 "Seç…" = "Choose…";
 "Sil" = "Delete";
 "Simgeler" = "Icons";
+"Sol Dosya" = "Left File";
 "Sol başlangıç klasörü" = "Left startup folder";
 "Sol panel etkin" = "Left panel active";
 "Sol panel etkin → Hedef: sağ panel" = "Left panel active → Destination: right panel";
+"Sol → Sağ: {0} · Sağ → Sol: {1} · Eşit: {2} · Çakışma: {3}" = "Left → Right: {0} · Right → Left: {1} · Equal: {2} · Conflict: {3}";
 "Sol:" = "Left:";
+"Sola kopyala" = "Copy to left";
 "Son açık sekmeleri geri yükle" = "Restore the last open tabs";
 "Sonraki Fark" = "Next Difference";
 "Sunucu (Host):" = "Server (Host):";
@@ -289,6 +293,7 @@ Compares size and date. Extra destination files are not removed. Previous versio
 "Tarih biçimi" = "Date format";
 "Taşı" = "Move";
 "Taşınıyor" = "Moving";
+"Tek yönlü (Asimetrik)" = "Asymmetric (Left is master)";
 "Tema" = "Theme";
 "Terminal’de Aç" = "Open in Terminal";
 "Toplu Adlandır" = "Batch Rename";
@@ -341,32 +346,19 @@ Compares size and date. Extra destination files are not removed. Previous versio
 "Yeniden adlandırmak için dosya seçin." = "Select files to rename.";
 "Yeniden adlandır…" = "Rename…";
 "Yenile" = "Refresh";
-"Yol: {0}
-Boyut: {1} bayt
-Değiştirilme: {2}
-İzinler: {3}" = "Path: {0}
-Size: {1} bytes
-Modified: {2}
-Permissions: {3}";
+"Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}" = "Path: {0}\nSize: {1} bytes\nModified: {2}\nPermissions: {3}";
 "Yolu Kopyala" = "Copy Path";
 "Yolu kopyala" = "Copy path";
+"Yön" = "Direction";
 "Yükleme iptal edildi." = "Upload cancelled.";
 "Yükleniyor: {0}" = "Uploading: {0}";
-"Yüklü sürüm: {0}.
-Önizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Installed version: {0}.
-You can include preview releases in Settings → Updates.";
+"Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Installed version: {0}.\nYou can include preview releases in Settings → Updates.";
 "ZIP Oluştur…" = "Create ZIP…";
 "ZIP ve 7z oluşturma, sistem arşiv motoruyla çıkarma. Arşiv içinde gezinme geçici bir klasör kullanır; değişiklikler özgün arşive geri yazılmaz." = "Create ZIP and 7z archives and extract with the system archive engine. Browsing an archive uses a temporary folder; changes are not written back to the original archive.";
 "ZIP · yaygın uyumluluk" = "ZIP · broad compatibility";
 "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir." = "[N] base name · [E] extension · [C] counter (starts at 1). A preview follows.";
 "macOS ile aynı" = "Same as macOS";
-"macOS için çift panelli dosya yöneticisi.
-© 2026 Ferdi Sahin · GNU GPL sürüm 3
-Bu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.
-Total Commander’dan esinlenen bağımsız uygulama." = "A dual-pane file manager for macOS.
-© 2026 Ferdi Sahin · GNU GPL version 3
-You may distribute and modify this free software under GPLv3. No warranty is provided.
-An independent application inspired by Total Commander.";
+"macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama." = "A dual-pane file manager for macOS.\n© 2026 Ferdi Sahin · GNU GPL version 3\nYou may distribute and modify this free software under GPLv3. No warranty is provided.\nAn independent application inspired by Total Commander.";
 "tümü küçük" = "lowercase";
 "{0} arşivi oluştur" = "Create {0} archive";
 "{0} dosya yeniden adlandırılacak." = "{0} files will be renamed.";
@@ -383,6 +375,7 @@ An independent application inspired by Total Commander.";
 "{0} öğe Çöp Kutusu’na taşınsın mı?" = "Move selection ({0}) to Trash?";
 "{0}: {1} · {2} bekleyen" = "{0}: {1} · {2} pending";
 "{0}Sürüm notlarını ve imzalı indirmeleri GitHub’da açabilirsiniz. Homebrew ile kurduysanız brew update ve brew upgrade --cask total-command komutlarını kullanabilirsiniz." = "{0}Open GitHub for release notes and signed downloads. If you installed with Homebrew, use brew update and brew upgrade --cask total-command.";
+"Çakışma" = "Conflict";
 "Çalıştır" = "Run";
 "Çalışıyor" = "Running";
 "Çoklu Yeniden Adlandır (Multi-Rename)" = "Multi-Rename Tool";
@@ -421,6 +414,7 @@ An independent application inspired by Total Commander.";
 "İptal bekleniyor…" = "Waiting to cancel…";
 "İptal edildi" = "Cancelled";
 "İçerik Karşılaştır" = "Compare Content";
+"İçeriğe göre (SHA-256)" = "By content (SHA-256)";
 "İşlem" = "Operation";
 "İşlem Kuyruğu" = "Operation Queue";
 "İşlem Kuyruğu ({0} bekleyen)" = "Operation Queue ({0} waiting)";

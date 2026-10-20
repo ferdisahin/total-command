@@ -28,6 +28,7 @@
 "Adına göre filtrele" = "Adına göre filtrele";
 "Alt klasör aramasına gizli dosyaları dahil et" = "Alt klasör aramasına gizli dosyaları dahil et";
 "Alt klasörlerde dosya ara" = "Alt klasörlerde dosya ara";
+"Alt klasörleri dahil et" = "Alt klasörleri dahil et";
 "Ara" = "Ara";
 "Ara:" = "Ara:";
 "Arama" = "Arama";
@@ -72,13 +73,12 @@
 "Birleştirmek için .001 uzantılı bir parça dosyası seçin." = "Birleştirmek için .001 uzantılı bir parça dosyası seçin.";
 "Bitti" = "Bitti";
 "Boyut" = "Boyut";
+"Boyut / Tarih" = "Boyut / Tarih";
 "Boş dosya bölünemez." = "Boş dosya bölünemez.";
 "Boşluk tuşuyla Quick Look önizleme" = "Boşluk tuşuyla Quick Look önizleme";
 "Bu Klasörü Ekle" = "Bu Klasörü Ekle";
 "Bu adda bir dosya zaten var." = "Bu adda bir dosya zaten var.";
-"Bu bir önizleme sürümüdür.
-" = "Bu bir önizleme sürümüdür.
-";
+"Bu bir önizleme sürümüdür.\n" = "Bu bir önizleme sürümüdür.\n";
 "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz." = "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz.";
 "Bu seçenek kapalıysa arşiv macOS’un varsayılan uygulamasıyla açılır. Arşiv menüsünden ZIP veya 7z biçimini ayrıca seçebilirsiniz. Şifreli arşivler bu sürümde desteklenmez." = "Bu seçenek kapalıysa arşiv macOS’un varsayılan uygulamasıyla açılır. Arşiv menüsünden ZIP veya 7z biçimini ayrıca seçebilirsiniz. Şifreli arşivler bu sürümde desteklenmez.";
 "Böl" = "Böl";
@@ -123,10 +123,12 @@
 "Eski Ad" = "Eski Ad";
 "Etkin Panelden Hedefe Eşitle…" = "Etkin Panelden Hedefe Eşitle…";
 "Etkin klasörde Terminal komutu çalıştır…" = "Etkin klasörde Terminal komutu çalıştır…";
+"Eşit" = "Eşit";
 "Eşitle" = "Eşitle";
 "Eşitleme iptal edildi. Tamamlanan değişiklikler korundu." = "Eşitleme iptal edildi. Tamamlanan değişiklikler korundu.";
 "Eşitleme planı hazırlanıyor" = "Eşitleme planı hazırlanıyor";
 "Eşitleme planı iptal edildi." = "Eşitleme planı iptal edildi.";
+"Eşitlenecek işlem bulunamadı." = "Eşitlenecek işlem bulunamadı.";
 "Eşitleniyor" = "Eşitleniyor";
 "F2–F8 kısayollarını etkinleştir" = "F2–F8 kısayollarını etkinleştir";
 "F3 Önizle" = "F3 Önizle";
@@ -168,9 +170,7 @@
 "Görseller, PDF ve videolar için küçük resim üret" = "Görseller, PDF ve videolar için küçük resim üret";
 "Görünüm" = "Görünüm";
 "Güncelle: " = "Güncelle: ";
-"Güncelleme kontrolü tamamlanamadı.
-" = "Güncelleme kontrolü tamamlanamadı.
-";
+"Güncelleme kontrolü tamamlanamadı.\n" = "Güncelleme kontrolü tamamlanamadı.\n";
 "Güncellemeler" = "Güncellemeler";
 "Güncellemeleri Kontrol Et…" = "Güncellemeleri Kontrol Et…";
 "Günde bir" = "Günde bir";
@@ -202,11 +202,7 @@
 "Kaynak Dosya:" = "Kaynak Dosya:";
 "Kaynak Kod" = "Kaynak Kod";
 "Kaynak ve hedef klasör aynı." = "Kaynak ve hedef klasör aynı.";
-"Kaynak: {0}
-Hedef: {1}
-Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Kaynak: {0}
-Hedef: {1}
-Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur.";
+"Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur." = "Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur.";
 "Kayıtlı Sunucular" = "Kayıtlı Sunucular";
 "Kes" = "Kes";
 "Kilitli sekmeler kapatılamaz." = "Kilitli sekmeler kapatılamaz.";
@@ -215,6 +211,7 @@ Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. 
 "Klasör Aç…" = "Klasör Aç…";
 "Klasör bulunamadı: {0}" = "Klasör bulunamadı: {0}";
 "Klasörler bu ölçütlere göre aynı." = "Klasörler bu ölçütlere göre aynı.";
+"Klasörleri Eşitle (Synchronize Dirs)" = "Klasörleri Eşitle (Synchronize Dirs)";
 "Klasörleri dosyalardan önce göster" = "Klasörleri dosyalardan önce göster";
 "Klavye" = "Klavye";
 "Komut satırını göster" = "Komut satırını göster";
@@ -254,12 +251,16 @@ Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. 
 "Satır aralığı" = "Satır aralığı";
 "Sayaç" = "Sayaç";
 "Sayaç Ayarları:" = "Sayaç Ayarları:";
+"Sağ Dosya" = "Sağ Dosya";
 "Sağ başlangıç klasörü" = "Sağ başlangıç klasörü";
 "Sağ panel etkin → Hedef: sol panel" = "Sağ panel etkin → Hedef: sol panel";
 "Sağ:" = "Sağ:";
+"Sağa kopyala" = "Sağa kopyala";
+"Sağdakini sil" = "Sağdakini sil";
 "Sekmeyi Kapat" = "Sekmeyi Kapat";
 "Sekmeyi Kilitle / Kilidi Aç" = "Sekmeyi Kilitle / Kilidi Aç";
 "Sekmeyi kapat" = "Sekmeyi kapat";
+"Senkronize Et" = "Senkronize Et";
 "Seçili kanalda {0} sürümünden daha yeni bir sürüm yok." = "Seçili kanalda {0} sürümünden daha yeni bir sürüm yok.";
 "Seçili İşi İptal Et" = "Seçili İşi İptal Et";
 "Seçim" = "Seçim";
@@ -268,10 +269,13 @@ Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. 
 "Seç…" = "Seç…";
 "Sil" = "Sil";
 "Simgeler" = "Simgeler";
+"Sol Dosya" = "Sol Dosya";
 "Sol başlangıç klasörü" = "Sol başlangıç klasörü";
 "Sol panel etkin" = "Sol panel etkin";
 "Sol panel etkin → Hedef: sağ panel" = "Sol panel etkin → Hedef: sağ panel";
+"Sol → Sağ: {0} · Sağ → Sol: {1} · Eşit: {2} · Çakışma: {3}" = "Sol → Sağ: {0} · Sağ → Sol: {1} · Eşit: {2} · Çakışma: {3}";
 "Sol:" = "Sol:";
+"Sola kopyala" = "Sola kopyala";
 "Son açık sekmeleri geri yükle" = "Son açık sekmeleri geri yükle";
 "Sonraki Fark" = "Sonraki Fark";
 "Sunucu (Host):" = "Sunucu (Host):";
@@ -289,6 +293,7 @@ Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. 
 "Tarih biçimi" = "Tarih biçimi";
 "Taşı" = "Taşı";
 "Taşınıyor" = "Taşınıyor";
+"Tek yönlü (Asimetrik)" = "Tek yönlü (Asimetrik)";
 "Tema" = "Tema";
 "Terminal’de Aç" = "Terminal’de Aç";
 "Toplu Adlandır" = "Toplu Adlandır";
@@ -341,32 +346,19 @@ Boyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. 
 "Yeniden adlandırmak için dosya seçin." = "Yeniden adlandırmak için dosya seçin.";
 "Yeniden adlandır…" = "Yeniden adlandır…";
 "Yenile" = "Yenile";
-"Yol: {0}
-Boyut: {1} bayt
-Değiştirilme: {2}
-İzinler: {3}" = "Yol: {0}
-Boyut: {1} bayt
-Değiştirilme: {2}
-İzinler: {3}";
+"Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}" = "Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}";
 "Yolu Kopyala" = "Yolu Kopyala";
 "Yolu kopyala" = "Yolu kopyala";
+"Yön" = "Yön";
 "Yükleme iptal edildi." = "Yükleme iptal edildi.";
 "Yükleniyor: {0}" = "Yükleniyor: {0}";
-"Yüklü sürüm: {0}.
-Önizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Yüklü sürüm: {0}.
-Önizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz.";
+"Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz." = "Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz.";
 "ZIP Oluştur…" = "ZIP Oluştur…";
 "ZIP ve 7z oluşturma, sistem arşiv motoruyla çıkarma. Arşiv içinde gezinme geçici bir klasör kullanır; değişiklikler özgün arşive geri yazılmaz." = "ZIP ve 7z oluşturma, sistem arşiv motoruyla çıkarma. Arşiv içinde gezinme geçici bir klasör kullanır; değişiklikler özgün arşive geri yazılmaz.";
 "ZIP · yaygın uyumluluk" = "ZIP · yaygın uyumluluk";
 "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir." = "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir.";
 "macOS ile aynı" = "macOS ile aynı";
-"macOS için çift panelli dosya yöneticisi.
-© 2026 Ferdi Sahin · GNU GPL sürüm 3
-Bu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.
-Total Commander’dan esinlenen bağımsız uygulama." = "macOS için çift panelli dosya yöneticisi.
-© 2026 Ferdi Sahin · GNU GPL sürüm 3
-Bu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.
-Total Commander’dan esinlenen bağımsız uygulama.";
+"macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama." = "macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama.";
 "tümü küçük" = "tümü küçük";
 "{0} arşivi oluştur" = "{0} arşivi oluştur";
 "{0} dosya yeniden adlandırılacak." = "{0} dosya yeniden adlandırılacak.";
@@ -383,6 +375,7 @@ Total Commander’dan esinlenen bağımsız uygulama.";
 "{0} öğe Çöp Kutusu’na taşınsın mı?" = "{0} öğe Çöp Kutusu’na taşınsın mı?";
 "{0}: {1} · {2} bekleyen" = "{0}: {1} · {2} bekleyen";
 "{0}Sürüm notlarını ve imzalı indirmeleri GitHub’da açabilirsiniz. Homebrew ile kurduysanız brew update ve brew upgrade --cask total-command komutlarını kullanabilirsiniz." = "{0}Sürüm notlarını ve imzalı indirmeleri GitHub’da açabilirsiniz. Homebrew ile kurduysanız brew update ve brew upgrade --cask total-command komutlarını kullanabilirsiniz.";
+"Çakışma" = "Çakışma";
 "Çalıştır" = "Çalıştır";
 "Çalışıyor" = "Çalışıyor";
 "Çoklu Yeniden Adlandır (Multi-Rename)" = "Çoklu Yeniden Adlandır (Multi-Rename)";
@@ -421,6 +414,7 @@ Total Commander’dan esinlenen bağımsız uygulama.";
 "İptal bekleniyor…" = "İptal bekleniyor…";
 "İptal edildi" = "İptal edildi";
 "İçerik Karşılaştır" = "İçerik Karşılaştır";
+"İçeriğe göre (SHA-256)" = "İçeriğe göre (SHA-256)";
 "İşlem" = "İşlem";
 "İşlem Kuyruğu" = "İşlem Kuyruğu";
 "İşlem Kuyruğu ({0} bekleyen)" = "İşlem Kuyruğu ({0} bekleyen)";

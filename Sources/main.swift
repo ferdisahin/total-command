@@ -335,6 +335,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     var multiRenameController: MultiRenameWindowController?
     var splitController: SplitWindowController?
     var combineController: CombineWindowController?
+    var syncWindowController: SyncWindowController?
     var job: JobState? { operations.current?.control }
     var process: Process?; var previewURLs: [URL] = []; var temporary: [URL] = []
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -770,15 +771,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     @objc func terminal() { NSWorkspace.shared.open([active.location], withApplicationAt: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"), configuration: NSWorkspace.OpenConfiguration()) }
     @objc func info() { guard let u = active.selected.first else { return }; do { let a = try FileManager.default.attributesOfItem(atPath: u.path); let alert = NSAlert(); alert.messageText = u.lastPathComponent; alert.informativeText = L("Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}", u.path, a[.size] ?? 0, a[.modificationDate] ?? "—", String((a[.posixPermissions] as? NSNumber)?.intValue ?? 0, radix: 8)); alert.runModal() } catch { show(error) } }
     @objc func sync() {
-        let source = active.location, target = other.location; let includeHidden = active.showHidden
-        var plan: [SyncChange] = []
-        startJob(L("Eşitleme planı hazırlanıyor"), work: { state, progress in plan = try FileTasks.syncPlan(from: source, to: target, includeHidden: includeHidden, cancelled: { state.cancelled }); progress(1, 1, L("Hazır")) }, complete: {
-            let a = NSAlert(); a.messageText = L("Hedefe eşitle: {0} değişiklik", plan.count)
-            a.informativeText = L("Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur.", source.path, target.path)
-            let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 620, height: 240)); text.isEditable = false; text.font = .systemFont(ofSize: 11); text.string = plan.isEmpty ? L("Klasörler bu ölçütlere göre aynı.") : plan.map { ($0.exists ? L("Güncelle: ") : L("Ekle: ")) + String($0.target.path.dropFirst(target.path.count + 1)) }.joined(separator: "\n")
-            let scroll = NSScrollView(frame: text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll; a.addButton(withTitle: L("Eşitle")); a.addButton(withTitle: L("Vazgeç"))
-            if a.runModal() == .alertFirstButtonReturn, !plan.isEmpty { self.startJob(L("Eşitleniyor"), work: { state, progress in try FileTasks.applySync(plan, cancelled: { state.cancelled }, progress: progress) }) }
-        })
+        let sw = SyncWindowController(leftDir: left.location, rightDir: right.location)
+        sw.onStartSync = { [weak self] actionableItems in
+            guard let self else { return }
+            self.startJob(L("Eşitleniyor"), queued: true) { state, progress in
+                try SyncEngine.executeSync(items: actionableItems, control: state) { done, total, name in
+                    progress(done, total, name)
+                }
+            }
+        }
+        syncWindowController = sw
+        sw.showWindow(nil)
+        sw.window?.makeKeyAndOrderFront(nil)
     }
     @objc func compare() {
         let a = left.entries.filter { !$0.directory }, b = right.entries.filter { !$0.directory }
