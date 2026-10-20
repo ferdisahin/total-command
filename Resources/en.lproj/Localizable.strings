@@ -480,3 +480,7 @@
 "Doğrulama işlemi iptal edildi." = "Verification cancelled.";
 "Oluştur" = "Create";
 "Seçili Dosyalar:" = "Selected Files:";
+
+"0 B / {0} · 0/{1} dosya, 0/{2} klasör · Boş: {3}" = "0 B / {0} · 0/{1} files, 0/{2} dirs · Free: {3}";
+"{0} / {1} · {2}/{3} dosya, {4}/{5} klasör seçili · Boş: {6}" = "{0} / {1} · {2}/{3} files, {4}/{5} dirs selected · Free: {6}";
+"Kullanılan Alanı Hesapla" = "Calculate Occupied Space";

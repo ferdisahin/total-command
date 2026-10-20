@@ -6,10 +6,46 @@ import Foundation
 struct Entry: Equatable {
     let url: URL
     let directory: Bool
-    let size: Int64
+    var size: Int64
     let date: Date
     var isParent = false
     var ext: String { directory ? "" : url.pathExtension }
+    var folderSizeCalculated: Bool = false
+}
+
+final class FolderSizeCache {
+    static let shared = FolderSizeCache()
+    private var cache: [URL: (size: Int64, modDate: Date)] = [:]
+    private let lock = NSLock()
+
+    func cachedSize(for url: URL) -> Int64? {
+        lock.lock(); defer { lock.unlock() }
+        guard let entry = cache[url] else { return nil }
+        let currentMod = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        if currentMod == entry.modDate {
+            return entry.size
+        }
+        return nil
+    }
+
+    func set(size: Int64, modDate: Date, for url: URL) {
+        lock.lock(); defer { lock.unlock() }
+        cache[url] = (size, modDate)
+    }
+
+    static func calculateDirectorySize(at url: URL, cancelled: (() -> Bool)? = nil) -> Int64 {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey, .isDirectoryKey], options: [.skipsHiddenFiles]) else { return 0 }
+        var total: Int64 = 0
+        while let fileURL = enumerator.nextObject() as? URL {
+            if cancelled?() == true { return total }
+            if let vals = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey]),
+               vals.isDirectory != true {
+                total += Int64(vals.fileSize ?? 0)
+            }
+        }
+        return total
+    }
 }
 
 struct PanelError: LocalizedError {

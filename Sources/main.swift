@@ -149,6 +149,55 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
         updateTabs()
     }
     @objc func changeTab() { tabIndex = tabs.selectedSegment; location = paths[tabIndex]; history = []; future = []; archiveRoot = nil; search.stringValue = ""; reload(); activated?() }
+    @objc 
+    func calculateSelectedFolderSizes() {
+        let selectedFolders = entries.enumerated().filter { idx, e in
+            !e.isParent && e.directory && selected.contains(e.url) && !e.folderSizeCalculated
+        }
+        guard !selectedFolders.isEmpty else { return }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            for (idx, e) in selectedFolders {
+                let modDate = (try? e.url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                let size = FolderSizeCache.calculateDirectorySize(at: e.url)
+                FolderSizeCache.shared.set(size: size, modDate: modDate, for: e.url)
+
+                DispatchQueue.main.async {
+                    if self.entries.indices.contains(idx) && self.entries[idx].url == e.url {
+                        self.entries[idx].size = size
+                        self.entries[idx].folderSizeCalculated = true
+                        self.updateStatus()
+                        self.table.reloadData(forRowIndexes: IndexSet(integer: idx), columnIndexes: IndexSet(integersIn: 0..<self.table.numberOfColumns))
+                    }
+                }
+            }
+        }
+    }
+
+    func calculateAllFolderSizes() {
+        let allFolders = entries.enumerated().filter { !$1.isParent && $1.directory }
+        guard !allFolders.isEmpty else { return }
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            for (idx, e) in allFolders {
+                let modDate = (try? e.url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                let size = FolderSizeCache.calculateDirectorySize(at: e.url)
+                FolderSizeCache.shared.set(size: size, modDate: modDate, for: e.url)
+
+                DispatchQueue.main.async {
+                    if self.entries.indices.contains(idx) && self.entries[idx].url == e.url {
+                        self.entries[idx].size = size
+                        self.entries[idx].folderSizeCalculated = true
+                        self.updateStatus()
+                        self.table.reloadData(forRowIndexes: IndexSet(integer: idx), columnIndexes: IndexSet(integersIn: 0..<self.table.numberOfColumns))
+                    }
+                }
+            }
+        }
+    }
+
     @objc func switchViewMode() { let urls = gridMode ? table.selectedRowIndexes.compactMap { entries.indices.contains($0) && !entries[$0].isParent ? entries[$0].url : nil } : grid.selectionIndexPaths.compactMap { entries.indices.contains($0.item) && !entries[$0.item].isParent ? entries[$0.item].url : nil }; gridScroll.isHidden = !gridMode; listScroll.isHidden = gridMode; select(urls); activated?() }
     @objc func pickDisk() { guard let u = disk.selectedItem?.representedObject as? URL else { return }; navigate(u); activated?() }
     func controlTextDidBeginEditing(_ obj: Notification) { activated?() }
@@ -191,7 +240,15 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
         do {
             let urls = try FileManager.default.contentsOfDirectory(at: location, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey], options: showHidden ? [] : [.skipsHiddenFiles])
             entries = try urls.filter { search.stringValue.isEmpty || $0.lastPathComponent.localizedCaseInsensitiveContains(search.stringValue) }.map {
-                let v = try $0.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey]); return Entry(url: $0, directory: v.isDirectory ?? false, size: Int64(v.fileSize ?? 0), date: v.contentModificationDate ?? .distantPast)
+                let v = try $0.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey])
+                let isDir = v.isDirectory ?? false
+                var size = Int64(v.fileSize ?? 0)
+                var calculated = false
+                if isDir, let cached = FolderSizeCache.shared.cachedSize(for: $0) {
+                    size = cached
+                    calculated = true
+                }
+                return Entry(url: $0, directory: isDir, size: size, date: v.contentModificationDate ?? .distantPast, isParent: false, folderSizeCalculated: calculated)
             }
             if location.deletingLastPathComponent() != location || archiveRoot == location { entries.append(Entry(url: location.deletingLastPathComponent(), directory: true, size: 0, date: .distantPast, isParent: true)) }
             sort(); path.stringValue = location.path; table.reloadData(); grid.reloadData(); select(selection); updateStatus()
@@ -276,13 +333,31 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     }
     func selectPattern(_ pattern: String) { let predicate = NSPredicate(format: "SELF LIKE[cd] %@", pattern); select(entries.filter { predicate.evaluate(with: $0.url.lastPathComponent) }.map(\.url)) }
     func numberOfRows(in tableView: NSTableView) -> Int { entries.count }
-    func tableViewSelectionDidChange(_ notification: Notification) { if !gridMode && !updating { activated?(); updateStatus() } }
+    func tableViewSelectionDidChange(_ notification: Notification) { if !gridMode && !updating { activated?(); updateStatus(); calculateSelectedFolderSizes() } }
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) { if let d = tableView.sortDescriptors.first { sortKey = d.key ?? "name"; ascending = d.ascending; reload() } }
     func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? { entries[row].isParent ? nil : entries[row].url as NSURL }
     func updateStatus() {
-        let urls = Set(selected); let bytes = entries.filter { urls.contains($0.url) }.reduce(Int64(0)) { $0 + ($1.directory ? 0 : $1.size) }
+        let urls = Set(selected)
+        let nonParent = entries.filter { !$0.isParent }
+        let totalFiles = nonParent.filter { !$0.directory }.count
+        let totalDirs = nonParent.filter { $0.directory }.count
+        let totalBytes = nonParent.reduce(Int64(0)) { $0 + ($1.directory ? ($1.folderSizeCalculated ? $1.size : 0) : $1.size) }
+
+        let selectedEntries = nonParent.filter { urls.contains($0.url) }
+        let selFiles = selectedEntries.filter { !$0.directory }.count
+        let selDirs = selectedEntries.filter { $0.directory }.count
+        let selBytes = selectedEntries.reduce(Int64(0)) { $0 + ($1.directory ? ($1.folderSizeCalculated ? $1.size : 0) : $1.size) }
+
         let free = remoteSession != nil ? "— (Uzak)" : (try? location.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity).map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "—"
-        status.stringValue = L("{0} öğe · {1} seçili ({2}) · Boş: {3}", entries.filter { !$0.isParent }.count, urls.count, ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file), free)
+
+        let selSizeStr = ByteCountFormatter.string(fromByteCount: selBytes, countStyle: .file)
+        let totSizeStr = ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .file)
+
+        if selected.isEmpty {
+            status.stringValue = L("0 B / {0} · 0/{1} dosya, 0/{2} klasör · Boş: {3}", totSizeStr, totalFiles, totalDirs, free)
+        } else {
+            status.stringValue = L("{0} / {1} · {2}/{3} dosya, {4}/{5} klasör seçili · Boş: {6}", selSizeStr, totSizeStr, selFiles, totalFiles, selDirs, totalDirs, free)
+        }
     }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let e = entries[row]; let key = tableColumn?.identifier.rawValue
@@ -292,8 +367,28 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
             let stack = NSStackView(views: [icon, label]); stack.spacing = 6; stack.toolTip = e.isParent ? L("Üst klasöre çık") : e.url.path; return stack
         }
         if e.isParent { return NSTextField(labelWithString: "") }
-        let text = key == "ext" ? e.ext : key == "size" ? (e.directory ? "<DIR>" : ByteCountFormatter.string(fromByteCount: e.size, countStyle: .file)) : DateFormatter.localizedString(from: e.date, dateStyle: Prefs.string("dateStyle") == "long" ? .long : .short, timeStyle: .short)
-        let label = NSTextField(labelWithString: text); label.font = .systemFont(ofSize: 11); label.textColor = .secondaryLabelColor; return label
+let text: String
+        let textColor: NSColor
+        if key == "ext" {
+            text = e.ext; textColor = .secondaryLabelColor
+        } else if key == "size" {
+            if e.directory {
+                if e.folderSizeCalculated {
+                    text = "<" + ByteCountFormatter.string(fromByteCount: e.size, countStyle: .file) + ">"
+                    textColor = .labelColor
+                } else {
+                    text = "<DIR>"
+                    textColor = .secondaryLabelColor
+                }
+            } else {
+                text = ByteCountFormatter.string(fromByteCount: e.size, countStyle: .file)
+                textColor = .secondaryLabelColor
+            }
+        } else {
+            text = DateFormatter.localizedString(from: e.date, dateStyle: Prefs.string("dateStyle") == "long" ? .long : .short, timeStyle: .short)
+            textColor = .secondaryLabelColor
+        }
+        let label = NSTextField(labelWithString: text); label.font = .systemFont(ofSize: 11); label.textColor = textColor; return label
     }
     func collectionView(_ collectionView: NSCollectionView, numberOfItemsInSection section: Int) -> Int { entries.count }
     func collectionView(_ collectionView: NSCollectionView, itemForRepresentedObjectAt indexPath: IndexPath) -> NSCollectionViewItem {
@@ -308,7 +403,7 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
         }
         item.textField?.stringValue = e.isParent ? "[..]" : e.url.lastPathComponent; item.view.toolTip = e.isParent ? L("Üst klasöre çık") : e.url.path; return item
     }
-    func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) { if !updating { activated?(); updateStatus() } }
+    func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) { if !updating { activated?(); updateStatus(); calculateSelectedFolderSizes() } }
     func collectionView(_ collectionView: NSCollectionView, didDeselectItemsAt indexPaths: Set<IndexPath>) { updateStatus() }
     func collectionView(_ collectionView: NSCollectionView, pasteboardWriterForItemAt indexPath: IndexPath) -> NSPasteboardWriting? { entries[indexPath.item].isParent ? nil : entries[indexPath.item].url as NSURL }
 }
@@ -499,6 +594,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             (L("Toplu Yeniden Adlandır…"), #selector(batchRename), "m"),
             (L("Dosyayı Böl…"), #selector(splitFile), ""),
             (L("Dosyaları Birleştir…"), #selector(combineFiles), ""),
+            (L("Kullanılan Alanı Hesapla"), #selector(calculateOccupiedSpace), ""),
             ("-", nil, ""),
             (L("Sağlama Toplamı Oluştur…"), #selector(createChecksums), ""),
             (L("Sağlama Toplamını Doğrula…"), #selector(verifyChecksums), ""),
@@ -609,6 +705,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         let cmd = event.modifierFlags.contains(.command)
         if cmd, event.keyCode == 126 { active.goUp(); return nil }
         if event.keyCode == 48 { activate(!activeLeft); window.makeFirstResponder(active.gridMode ? active.grid : active.table); return nil }
+        if event.modifierFlags.contains([.option, .shift]), event.keyCode == 36 { active.calculateAllFolderSizes(); return nil }
         if event.keyCode == 36 { active.openSelected(); return nil }
         if event.keyCode == 49, Prefs.bool("spacePreview") { preview(); return nil }
         if event.keyCode == 53 {
@@ -641,6 +738,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         return event
     }
     func dispatchAction(_ action: String) { switch action { case "preview": preview(); case "edit": editFile(); case "copy": copyFiles(); case "move": moveFiles(); case "folder": newFolder(); case "trash": trash(); case "rename": rename(); case "find": find(); default: break } }
+    @objc func calculateOccupiedSpace() { active.calculateAllFolderSizes() }
     @objc func settings() {
         if settingsController == nil { settingsController = SettingsController(); settingsController?.changed = { [weak self] in self?.applySettings() }; settingsController?.checkForUpdates = { [weak self] in self?.checkUpdates() } }
         settingsController?.checkingUpdates = updateChecker.isChecking
