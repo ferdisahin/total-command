@@ -1,6 +1,6 @@
 cask "total-command" do
-  version "0.2.2"
-  sha256 "5244a6dff502deece7064a206fbb56538a0a216311d8338c7eafe2bd85ffae99"
+  version "0.2.4"
+  sha256 "a0e2f4866c46cdd669882d545b08f0af8e5053643c1724cad6f6702d347c65e1"
 
   url "https://github.com/ferdisahin/total-command/releases/download/v#{version}/Total-Command-#{version}-universal.zip"
   name "Total Command"

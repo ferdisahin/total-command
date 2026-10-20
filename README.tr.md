@@ -8,7 +8,7 @@ macOS için Swift/AppKit ile geliştirilmiş, Total Commander’ın çift panel 
 
 ## Açma ve derleme
 
-[İmzalı ve Apple noter onaylı DMG’yi indirin](https://github.com/ferdisahin/total-command/releases/tag/v0.2.2), açın ve `TotalCommand.app` dosyasını Uygulamalar klasörüne sürükleyin. Intel/Apple Silicon ve macOS 13+ içindir. 0.2.2 erken önizleme sürümüdür.
+[İmzalı ve Apple noter onaylı DMG’yi indirin](https://github.com/ferdisahin/total-command/releases/tag/v0.2.4), açın ve `TotalCommand.app` dosyasını Uygulamalar klasörüne sürükleyin. Intel/Apple Silicon ve macOS 13+ içindir. 0.2.4 erken önizleme sürümüdür.
 
 Homebrew ile kurulum:
 
@@ -24,7 +24,7 @@ Kaynaklardan derlemek için Xcode komut satırı araçlarıyla `./build.sh`, tes
 
 Menüden **Total Command → Güncellemeleri Kontrol Et…** veya **Ayarlar → Güncellemeler** üzerinden yeni sürüm kontrolü yapılabilir. İsteğe bağlı günlük/haftalık kontrol ve önizleme kanalı vardır. Otomatik kontrol varsayılan olarak kapalıdır. Yeni sürüm bulunduğunda GitHub indirme sayfası açılır; uygulama kendini otomatik olarak değiştirmez.
 
-## Sonraki sürüm: 0.2.4
+## 0.2.4 özellikleri
 
 - **Yerleşik FTP, FTPS ve SFTP İstemcisi**: Bağlantı Yöneticisi (`Cmd+Shift+F`), Hızlı Bağlan (`Cmd+Shift+N`), çift panel üzerinden sunucu içi gezinme, F5 ile arka planda indirme ve yükleme.
 - **Dosya İçeriği Karşılaştırma (Compare by Content / Diff)**: Yan yana çift sütunlu senkronize kaydırma, satır numaraları, renkli fark vurgusu ve ikili (binary) offset/hash karşılaştırma.
@@ -33,8 +33,6 @@ Menüden **Total Command → Güncellemeleri Kontrol Et…** veya **Ayarlar → 
 - Türkçe/İngilizce uygulama dili ve macOS dilini izleme seçeneği. Dil değişikliği yeniden açılışta uygulanır.
 - Liste ve simge görünümünün başında üst klasöre çıkan `[..]` satırı. Sıralama ve filtrelemeden etkilenmez; dosya işlemlerine dahil edilmez. Disk kökünde gösterilmez.
 - Kopyalama/taşıma kuyruğu, bekleyenleri iptal, sırayı duraklatma/sürdürme ve oturumluk hata geçmişi.
-
-Bu eklemeler henüz yayımlanmış 0.2.2 paketinde yoktur.
 
 ## Dosya yönetimi
 
@@ -98,6 +96,6 @@ Arayüzde çift panel, liste/simge görünümü, sekme açma/kapatma, kopyalama,
 Copyright © 2026 Ferdi Sahin. **GPL-3.0-only**; tam metin [LICENSE](LICENSE). Dağıtılan değiştirilmiş sürümlerin ilgili kaynakları da GPLv3 koşullarıyla sunulmalıdır. Yazılım garanti verilmeden sağlanır.
 
 
-## 0.2.4 yayın hazırlığı
+## Ek özellikler ve uzak bağlantılar
 
 Dosya bölme/birleştirme (CRC32), kilitli sekmeler, SHA-256 içerik karşılaştırmalı iki yönlü eşitleme, checksum oluşturma/doğrulama ve pencere içi menü/araç/komut çubuğu eklendi. Uzak bağlantıların canlı FTP/FTPS/SFTP sunucularındaki kapsamlı testleri tamamlanmadı. FTPS, 21. portta açık TLS yükseltmesi kullanır ve sunucu sertifikasını doğrular. Kayıtlı sunucu parolaları henüz Keychain yerine uygulama tercihlerinde saklanır; kayıtlı SFTP bağlantılarında SSH anahtarı tercih edin.

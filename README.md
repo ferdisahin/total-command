@@ -8,9 +8,9 @@ An independent native macOS dual-pane file manager built with Swift and AppKit, 
 
 ## Install
 
-Requires macOS 13 or later. Supports Apple Silicon and Intel. Version 0.2.2 is an early preview, signed with Developer ID and notarized by Apple.
+Requires macOS 13 or later. Supports Apple Silicon and Intel. Version 0.2.4 is an early preview, signed with Developer ID and notarized by Apple.
 
-Download the [0.2.2 release](https://github.com/ferdisahin/total-command/releases/tag/v0.2.2), open the DMG and drag `TotalCommand.app` to Applications, or install with Homebrew:
+Download the [0.2.4 release](https://github.com/ferdisahin/total-command/releases/tag/v0.2.4), open the DMG and drag `TotalCommand.app` to Applications, or install with Homebrew:
 
 ```sh
 brew install --cask ferdisahin/tap/total-command
@@ -35,7 +35,7 @@ BUILD_ARCHS='arm64 x86_64' ./build.sh
 
 Default development builds are ad-hoc signed. Public releases are separately signed and notarized.
 
-## Next release: 0.2.4
+## Features in 0.2.4
 
 - **Built-in FTP, FTPS, and SFTP Client**: Site Manager (`Cmd+Shift+F`), Quick Connect (`Cmd+Shift+N`), dual-pane remote navigation, and background queued transfer (F5).
 - **Compare by Content (Diff)**: Side-by-side synchronized view, line numbering, colored difference highlighting, and binary offset comparison.
@@ -45,7 +45,7 @@ Default development builds are ad-hoc signed. Public releases are separately sig
 - A pinned `[..]` parent-folder entry in both list and icon views. It ignores sorting and filtering, is excluded from file operations, and is hidden at the filesystem root.
 - A copy/move queue with pending-job cancellation, pause/resume between jobs, and session history including errors.
 
-The upcoming 0.2.4 build also includes file splitting/combining with CRC32 checks, locked tabs, two-way synchronization with SHA-256 comparison, checksum generation/verification, and the updated in-window menu, toolbar and command prompt. These changes are not included in the published 0.2.2 download yet.
+Version 0.2.4 also includes file splitting/combining with CRC32 checks, locked tabs, two-way synchronization with SHA-256 comparison, checksum generation/verification, and the updated in-window menu, toolbar and command prompt.
 
 ## File management
 
