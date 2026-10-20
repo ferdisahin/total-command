@@ -432,3 +432,27 @@
 "Araçlar" = "Tools";
 "Dosya & Görünüm" = "File & View";
 "Klasörleri Eşitle…" = "Synchronize Dirs…";
+
+"Ada Göre Sırala" = "Sort by Name";
+"Arşivde Gezin…" = "Browse Archive…";
+"Arşivden Çıkar…" = "Unpack…";
+"Ayarları Kaydet" = "Save Settings";
+"Ayarlar kaydedildi." = "Settings saved.";
+"Aynı Uzantıdakileri Seç" = "Select Same Extension";
+"Başlat" = "Start";
+"Boyuta Göre Sırala" = "Sort by Size";
+"Bu Klasörü Sık Kullanılanlara Ekle" = "Add Current Folder to Bookmarks";
+"Hedefi Kaynağa Eşitle" = "Target = Source";
+"Liste Görünümü" = "List View";
+"Paketle / Sıkıştır…" = "Pack…";
+"Pencere Konumunu Kaydet" = "Save Window Position";
+"Pencere konumu kaydedildi." = "Window position saved.";
+"Seçili Adları Kopyala" = "Copy Selected Names";
+"Simgeler / Küçük Resimler" = "Thumbnails View";
+"Tarihe Göre Sırala" = "Sort by Date";
+"Uzantıya Göre Sırala" = "Sort by Extension";
+"Yapılandırma" = "Configuration";
+"Yardım" = "Help";
+"Özellikler / Bilgi Al" = "Properties / Get Info";
+
+"Sık Kullanılan Klasörler…" = "Directory Hotlist…";

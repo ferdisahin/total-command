@@ -360,43 +360,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             for (title, action) in [(L("Aç"), #selector(openItem)), (L("Önizle"), #selector(preview)), (L("Karşı panele kopyala"), #selector(copyFiles)), (L("Karşı panele taşı"), #selector(moveFiles)), (L("Yeniden adlandır…"), #selector(rename)), (L("Yolu kopyala"), #selector(copyPath)), (L("Finder’da göster"), #selector(reveal)), (L("Çöpe taşı…"), #selector(trash))] { let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; context.addItem(item) }
             pane.table.menu = context; pane.grid.menu = context.copy() as? NSMenu
         }
-        let top = NSStackView(); top.spacing = 8
-        let fileMenu = pullDownButton(L("Dosya & Görünüm"), items: [
-            (L("Klasör Aç…"), #selector(chooseFolder)),
-            (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden)),
-            (L("Dosya Ara…"), #selector(find)),
-            ("-", nil),
-            (L("Finder’da Göster"), #selector(reveal)),
-            (L("Terminal’de Aç"), #selector(terminal)),
-            (L("Yolu Kopyala"), #selector(copyPath))
-        ])
-        let toolsMenu = pullDownButton(L("Araçlar"), items: [
-            (L("Toplu Yeniden Adlandır…"), #selector(batchRename)),
-            (L("Klasörleri Eşitle…"), #selector(sync)),
-            (L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent)),
-            ("-", nil),
-            (L("Dosyayı Böl…"), #selector(splitFile)),
-            (L("Dosyaları Birleştir…"), #selector(combineFiles)),
-            ("-", nil),
-            (L("Panelleri Karşılaştır"), #selector(compare)),
-            (L("Panelleri Değiştir"), #selector(swap))
-        ])
-        let netMenu = pullDownButton(L("Ağ & Arşiv"), items: [
-            (L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager)),
-            (L("Hızlı Bağlan…"), #selector(showQuickConnect)),
-            ("-", nil),
-            (L("Sıkıştır"), #selector(pack)),
-            (L("Çıkar"), #selector(unpack))
-        ])
-        top.addArrangedSubview(fileMenu)
-        top.addArrangedSubview(toolsMenu)
-        top.addArrangedSubview(netMenu)
-        top.addArrangedSubview(button(L("Yenile"), #selector(refresh)))
-        queueButton.target = self; queueButton.action = #selector(showQueue); top.addArrangedSubview(queueButton)
+        let top = NSStackView(); top.spacing = 6
+        top.addArrangedSubview(iconBarButton("arrow.clockwise", L("Yenile"), #selector(refresh)))
+        top.addArrangedSubview(iconBarButton("list.bullet", L("Liste Görünümü"), #selector(showListMode)))
+        top.addArrangedSubview(iconBarButton("square.grid.2x2", L("Simgeler / Küçük Resimler"), #selector(showGridMode)))
+        top.addArrangedSubview(iconBarButton("eye", L("Önizle"), #selector(preview)))
+        top.addArrangedSubview(iconBarButton("archivebox", L("Paketle / Sıkıştır…"), #selector(pack)))
+        top.addArrangedSubview(iconBarButton("doc.badge.arrow.up", L("Arşivden Çıkar…"), #selector(unpack)))
+        top.addArrangedSubview(iconBarButton("arrow.left.arrow.right", L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent)))
+        top.addArrangedSubview(iconBarButton("magnifyingglass", L("Dosya Ara…"), #selector(find)))
+        top.addArrangedSubview(iconBarButton("character.cursor.ibeam", L("Toplu Yeniden Adlandır…"), #selector(batchRename)))
+        top.addArrangedSubview(iconBarButton("arrow.triangle.2.circlepath", L("Klasörleri Eşitle…"), #selector(sync)))
+        top.addArrangedSubview(iconBarButton("network", L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager)))
+        queueButton.target = self; queueButton.action = #selector(showQueue)
+        queueButton.bezelStyle = .texturedRounded
+        top.addArrangedSubview(queueButton)
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         top.addArrangedSubview(spacer)
-        top.addArrangedSubview(button(L("Ayarlar"), #selector(settings)))
+        top.addArrangedSubview(iconBarButton("gearshape", L("Ayarlar…"), #selector(settings)))
         let bottom = NSStackView(); bottom.distribution = .fillEqually; bottom.spacing = 4
         for (i, pair) in [(L("F3 Önizle"), #selector(preview)), (L("F4 Düzenle"), #selector(editFile)), (L("F5 Kopyala"), #selector(copyFiles)), (L("F6 Taşı"), #selector(moveFiles)), (L("F7 Klasör"), #selector(newFolder)), (L("F8 Çöpe Taşı"), #selector(trash))].enumerated() { let b = button(pair.0, pair.1); actionButtons[i + 3] = b; bottom.addArrangedSubview(b) }
         progress.isIndeterminate = false; progress.minValue = 0; progress.maxValue = 1; progress.style = .bar; progress.widthAnchor.constraint(equalToConstant: 180).isActive = true; progress.isHidden = true
@@ -418,40 +400,132 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         DispatchQueue.main.async { [weak self] in self?.checkAutomaticUpdates() }
     }
     func button(_ title: String, _ action: Selector) -> NSButton { NSButton(title: title, target: self, action: action) }
-    func pullDownButton(_ title: String, items: [(String, Selector?)]) -> NSPopUpButton {
-        let btn = NSPopUpButton(frame: .zero, pullsDown: true)
-        btn.bezelStyle = .rounded
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: title, action: nil, keyEquivalent: ""))
-        for (label, action) in items {
-            if label == "-" || action == nil {
-                menu.addItem(NSMenuItem.separator())
-            } else {
-                let item = NSMenuItem(title: label, action: action, keyEquivalent: "")
-                item.target = self
-                menu.addItem(item)
-            }
-        }
-        btn.menu = menu
-        return btn
+    func iconBarButton(_ symbol: String, _ tooltip: String, _ action: Selector) -> NSButton {
+        let b = NSButton(image: NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip) ?? NSImage(), target: self, action: action)
+        b.bezelStyle = .texturedRounded
+        b.toolTip = tooltip
+        b.imageScaling = .scaleProportionallyDown
+        b.widthAnchor.constraint(equalToConstant: 32).isActive = true
+        b.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        return b
     }
     func buildMenus() {
         let root = NSMenu(); NSApp.mainMenu = root
-        func submenu(_ title: String, _ items: [(String, Selector, String)]) {
+        func submenu(_ title: String, _ items: [(String, Selector?, String)]) {
             let item = NSMenuItem(); item.title = title; root.addItem(item); let menu = NSMenu(title: title); item.submenu = menu
-            for (label, action, key) in items { let child = NSMenuItem(title: label, action: action, keyEquivalent: key); child.target = self; menu.addItem(child) }
+            for (label, action, key) in items {
+                if label == "-" || action == nil {
+                    menu.addItem(NSMenuItem.separator())
+                } else {
+                    let child = NSMenuItem(title: label, action: action, keyEquivalent: key)
+                    child.target = self
+                    menu.addItem(child)
+                }
+            }
         }
-        submenu("Total Command", [(L("Total Command Hakkında"), #selector(about), ""), (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), ""), (L("Ayarlar…"), #selector(settings), ","), (L("Çık"), #selector(quit), "q")])
-        submenu(L("Dosyalar"), [(L("Klasör Aç…"), #selector(chooseFolder), "o"), (L("Yeni Klasör…"), #selector(newFolder), ""), (L("Yeni Metin Dosyası…"), #selector(newFile), ""), (L("Yeniden Adlandır…"), #selector(rename), ""), (L("Toplu Yeniden Adlandır…"), #selector(batchRename), "m"), (L("Dosyayı Böl…"), #selector(splitFile), ""), (L("Dosyaları Birleştir…"), #selector(combineFiles), ""), (L("Bilgi Al"), #selector(info), "i"), (L("Finder’da Göster"), #selector(reveal), ""), (L("Çöpe Taşı…"), #selector(trash), "")])
-        submenu(L("Seçim"), [(L("Tümünü Seç"), #selector(selectAll), "a"), (L("Seçimi Tersine Çevir"), #selector(invert), ""), (L("Desene Göre Seç…"), #selector(selectPattern), ""), (L("Seçimi Temizle"), #selector(clearSelection), "")])
-        submenu(L("Komutlar"), [(L("İşlem Kuyruğu…"), #selector(showQueue), ""), (L("Kopyala"), #selector(copyFiles), ""), (L("Taşı"), #selector(moveFiles), ""), (L("Dosya Ara…"), #selector(find), "f"), (L("Panelleri Karşılaştır"), #selector(compare), ""), (L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent), ""), (L("Etkin Panelden Hedefe Eşitle…"), #selector(sync), ""), (L("Panelleri Değiştir"), #selector(swap), "u"), (L("Terminal’de Aç"), #selector(terminal), ""), (L("Yolu Kopyala"), #selector(copyPath), "")])
-        submenu(L("Görünüm"), [(L("Yeni Sekme"), #selector(newTab), "t"), (L("Sekmeyi Kapat"), #selector(closeTab), "w"), (L("Sekmeyi Kilitle / Kilidi Aç"), #selector(toggleLockTab), ""), (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden), "."), (L("Yenile"), #selector(refresh), "r"), (L("Önizle"), #selector(preview), "y")])
-        submenu(L("Ağ"), [(L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager), "F"), (L("Hızlı Bağlan…"), #selector(showQuickConnect), "N"), (L("Bağlantıyı Kes"), #selector(disconnectRemote), ""), (L("Sunucuya Bağlan…"), #selector(connectServer), "k")])
-        submenu(L("Favoriler"), [(L("Bu Klasörü Ekle"), #selector(addBookmark), "d"), (L("Favori Klasöre Git…"), #selector(bookmarks), "b")])
-        submenu(L("Arşiv"), [(L("ZIP Oluştur…"), #selector(packZIP), ""), (L("7z Oluştur…"), #selector(pack7z), ""), (L("Arşivi Çıkar"), #selector(unpack), ""), (L("Arşivde Gezin"), #selector(browse), "")])
+        submenu("Total Command", [
+            (L("Total Command Hakkında"), #selector(about), ""),
+            (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), ""),
+            (L("Ayarlar…"), #selector(settings), ","),
+            ("-", nil, ""),
+            (L("Çık"), #selector(quit), "q")
+        ])
+        submenu(L("Dosyalar"), [
+            (L("Paketle / Sıkıştır…"), #selector(pack), ""),
+            (L("Arşivden Çıkar…"), #selector(unpack), ""),
+            (L("Arşivde Gezin…"), #selector(browse), ""),
+            ("-", nil, ""),
+            (L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent), ""),
+            (L("Özellikler / Bilgi Al"), #selector(info), "i"),
+            (L("Toplu Yeniden Adlandır…"), #selector(batchRename), "m"),
+            (L("Dosyayı Böl…"), #selector(splitFile), ""),
+            (L("Dosyaları Birleştir…"), #selector(combineFiles), ""),
+            ("-", nil, ""),
+            (L("Klasör Aç…"), #selector(chooseFolder), "o"),
+            (L("Yeni Klasör…"), #selector(newFolder), "n"),
+            (L("Yeni Metin Dosyası…"), #selector(newFile), ""),
+            (L("Yeniden Adlandır…"), #selector(rename), ""),
+            (L("Finder’da Göster"), #selector(reveal), ""),
+            (L("Çöpe Taşı…"), #selector(trash), "\u{7f}")
+        ])
+        submenu(L("Seçim"), [
+            (L("Desene Göre Seç…"), #selector(selectPattern), "+"),
+            (L("Tümünü Seç"), #selector(selectAll), "a"),
+            (L("Seçimi Temizle"), #selector(clearSelection), "-"),
+            (L("Seçimi Tersine Çevir"), #selector(invert), "*"),
+            (L("Aynı Uzantıdakileri Seç"), #selector(selectSameExt), ""),
+            ("-", nil, ""),
+            (L("Seçili Adları Kopyala"), #selector(copySelectedNames), ""),
+            (L("Yolu Kopyala"), #selector(copyPath), ""),
+            ("-", nil, ""),
+            (L("Panelleri Karşılaştır"), #selector(compare), "")
+        ])
+        submenu(L("Komutlar"), [
+            (L("Dosya Ara…"), #selector(find), "f"),
+            (L("Sık Kullanılan Klasörler…"), #selector(bookmarks), "d"),
+            (L("Klasörleri Eşitle…"), #selector(sync), ""),
+            ("-", nil, ""),
+            (L("Geri"), #selector(goBackHistory), "["),
+            (L("İleri"), #selector(goForwardHistory), "]"),
+            ("-", nil, ""),
+            (L("Terminal’de Aç"), #selector(terminal), ""),
+            (L("İşlem Kuyruğu…"), #selector(showQueue), ""),
+            ("-", nil, ""),
+            (L("Panelleri Değiştir"), #selector(swap), "u"),
+            (L("Hedefi Kaynağa Eşitle"), #selector(targetEqualsSource), "")
+        ])
+        submenu(L("Ağ"), [
+            (L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager), "F"),
+            (L("Hızlı Bağlan…"), #selector(showQuickConnect), "N"),
+            (L("Bağlantıyı Kes"), #selector(disconnectRemote), ""),
+            (L("Sunucuya Bağlan…"), #selector(connectServer), "k")
+        ])
+        submenu(L("Görünüm"), [
+            (L("Liste Görünümü"), #selector(showListMode), "1"),
+            (L("Simgeler / Küçük Resimler"), #selector(showGridMode), "2"),
+            (L("Önizle"), #selector(preview), "y"),
+            ("-", nil, ""),
+            (L("Yeni Sekme"), #selector(newTab), "t"),
+            (L("Sekmeyi Kapat"), #selector(closeTab), "w"),
+            (L("Sekmeyi Kilitle / Kilidi Aç"), #selector(toggleLockTab), "l"),
+            ("-", nil, ""),
+            (L("Ada Göre Sırala"), #selector(sortByName), ""),
+            (L("Uzantıya Göre Sırala"), #selector(sortByExt), ""),
+            (L("Boyuta Göre Sırala"), #selector(sortBySize), ""),
+            (L("Tarihe Göre Sırala"), #selector(sortByDate), ""),
+            ("-", nil, ""),
+            (L("Yenile"), #selector(refresh), "r"),
+            (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden), ".")
+        ])
+        submenu(L("Yapılandırma"), [
+            (L("Ayarlar…"), #selector(settings), ","),
+            (L("Pencere Konumunu Kaydet"), #selector(saveWindowPosition), ""),
+            (L("Ayarları Kaydet"), #selector(saveSettingsAction), "")
+        ])
+        submenu(L("Başlat"), [
+            (L("Bu Klasörü Sık Kullanılanlara Ekle"), #selector(addBookmark), "D"),
+            (L("Sık Kullanılan Klasörler…"), #selector(bookmarks), "b")
+        ])
+        submenu(L("Yardım"), [
+            (L("Total Command Hakkında"), #selector(about), ""),
+            (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), "")
+        ])
         let editItem = NSMenuItem(); root.addItem(editItem); let edit = NSMenu(title: L("Düzen")); editItem.submenu = edit
         for (title, action, key) in [(L("Kes"), #selector(cutClipboard), "x"), (L("Kopyala"), #selector(copyClipboard), "c"), (L("Yapıştır"), #selector(pasteClipboard), "v")] { let item = edit.addItem(withTitle: title, action: action, keyEquivalent: key); item.target = self }
     }
+    @objc func selectSameExt() { guard let sel = active.selected.first else { return }; let ext = sel.pathExtension; active.selectPattern(ext.isEmpty ? "*" : "*." + ext) }
+    @objc func copySelectedNames() { let names = (active.selected.isEmpty ? [active.location] : active.selected).map(\.lastPathComponent).joined(separator: "\n"); NSPasteboard.general.clearContents(); NSPasteboard.general.setString(names, forType: .string) }
+    @objc func goBackHistory() { active.goBack() }
+    @objc func goForwardHistory() { active.goForward() }
+    @objc func targetEqualsSource() { other.navigate(active.location) }
+    @objc func showListMode() { active.mode.selectedSegment = 0; active.switchViewMode() }
+    @objc func showGridMode() { active.mode.selectedSegment = 1; active.switchViewMode() }
+    @objc func sortByName() { active.sortKey = "name"; active.ascending = true; active.reload() }
+    @objc func sortByExt() { active.sortKey = "ext"; active.ascending = true; active.reload() }
+    @objc func sortBySize() { active.sortKey = "size"; active.ascending = false; active.reload() }
+    @objc func sortByDate() { active.sortKey = "date"; active.ascending = false; active.reload() }
+    @objc func saveWindowPosition() { window.saveFrame(usingName: "TotalCommandMainWindow"); indicator.stringValue = L("Pencere konumu kaydedildi.") }
+    @objc func saveSettingsAction() { applySettings(); indicator.stringValue = L("Ayarlar kaydedildi.") }
     func key(_ event: NSEvent) -> NSEvent? {
         guard NSApp.keyWindow === window, window.attachedSheet == nil, NSApp.modalWindow == nil, !(window.firstResponder is NSTextView) else { return event }
         let cmd = event.modifierFlags.contains(.command)
