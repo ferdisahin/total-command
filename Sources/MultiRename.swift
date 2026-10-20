@@ -70,9 +70,17 @@ final class MultiRenameEngine {
 
             // 1. Process Name Pattern
             var name = options.namePattern
+            name = name.replacingOccurrences(of: "[YMD]", with: "\(year)\(month)\(day)")
+            name = name.replacingOccurrences(of: "[Y-M-D]", with: "\(year)-\(month)-\(day)")
+            name = name.replacingOccurrences(of: "[D.M.Y]", with: "\(day).\(month).\(year)")
+            name = name.replacingOccurrences(of: "[hms]", with: "\(hour)\(minute)\(second)")
+            name = name.replacingOccurrences(of: "[h-m-s]", with: "\(hour)-\(minute)-\(second)")
+            name = name.replacingOccurrences(of: "[DATE]", with: "\(year)-\(month)-\(day)")
+            name = name.replacingOccurrences(of: "[TIME]", with: "\(hour)-\(minute)-\(second)")
             name = name.replacingOccurrences(of: "[N]", with: oldBase)
             name = name.replacingOccurrences(of: "[C]", with: counterStr)
             name = name.replacingOccurrences(of: "[Y]", with: year)
+            name = name.replacingOccurrences(of: "[y]", with: String(year.suffix(2)))
             name = name.replacingOccurrences(of: "[M]", with: month)
             name = name.replacingOccurrences(of: "[D]", with: day)
             name = name.replacingOccurrences(of: "[h]", with: hour)
@@ -105,8 +113,15 @@ final class MultiRenameEngine {
             // 2. Process Extension Pattern
             var ext = options.extPattern
             if !isDir {
+                ext = ext.replacingOccurrences(of: "[YMD]", with: "\(year)\(month)\(day)")
+                ext = ext.replacingOccurrences(of: "[Y-M-D]", with: "\(year)-\(month)-\(day)")
+                ext = ext.replacingOccurrences(of: "[D.M.Y]", with: "\(day).\(month).\(year)")
                 ext = ext.replacingOccurrences(of: "[E]", with: oldExt)
                 ext = ext.replacingOccurrences(of: "[C]", with: counterStr)
+                ext = ext.replacingOccurrences(of: "[Y]", with: year)
+                ext = ext.replacingOccurrences(of: "[y]", with: String(year.suffix(2)))
+                ext = ext.replacingOccurrences(of: "[M]", with: month)
+                ext = ext.replacingOccurrences(of: "[D]", with: day)
             } else {
                 ext = ""
             }

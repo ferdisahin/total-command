@@ -11,7 +11,20 @@ final class MultiRenameTests {
         testRegexReplace()
         testCaseConversions()
         testDuplicateDetection()
+        testDatePatterns()
         print("PASS: Multi-rename templates, substring slices, regex search/replace, case conversions, and duplicate collision guard")
+    }
+
+    private static func testDatePatterns() {
+        let urls = [URL(fileURLWithPath: "/tmp/alpha.txt")]
+        var opt = MultiRenameOptions()
+        opt.namePattern = "[N]-[C]-[YMD]"
+        opt.extPattern = "[E]"
+
+        let items = MultiRenameEngine.generateNames(urls: urls, options: opt)
+        assert(items.count == 1)
+        assert(!items[0].newName.contains("[YMD]"), "Date tag [YMD] should be expanded")
+        assert(items[0].newName.hasPrefix("alpha-1-20"), "Expected alpha-1-20... got \(items[0].newName)")
     }
 
     private static func testBasicPatterns() {
