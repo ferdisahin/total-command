@@ -4,7 +4,10 @@ set -eu
 cd "$(dirname "$0")/.."
 : "${SIGNING_IDENTITY:?Set a Developer ID Application signing identity}"
 : "${NOTARY_PROFILE:?Set the name of an existing notarytool Keychain profile}"
-[[ "$SIGNING_IDENTITY" == "Developer ID Application:"* ]] || { print -u2 "Use a Developer ID Application identity."; exit 1; }
+security find-identity -v -p codesigning | awk -v wanted="$SIGNING_IDENTITY" '
+  index($0, wanted) > 0 && index($0, "Developer ID Application:") > 0 { found = 1 }
+  END { exit !found }
+' || { print -u2 "Use a valid Developer ID Application identity name or its 40-character SHA-1 hash."; exit 1; }
 [[ -f LICENSE ]] || { print -u2 "Choose a license and add LICENSE before a public release."; exit 1; }
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
 [[ "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { print -u2 "Expected a numeric semantic version."; exit 1; }

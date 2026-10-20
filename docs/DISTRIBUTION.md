@@ -20,10 +20,10 @@ Create a notarytool Keychain credential profile using an Apple-supported authent
 xcrun notarytool store-credentials total-command-notary
 ```
 
-After committing the release source (LICENSE is included):
+After committing the release source (LICENSE is included), use the 40-character SHA-1 identity listed by `security find-identity`. Selecting by hash avoids locale issues with non-ASCII names:
 
 ```sh
-SIGNING_IDENTITY='Developer ID Application: YOUR NAME (TEAMID)' \
+SIGNING_IDENTITY='DEVELOPER_ID_APPLICATION_SHA1' \
 NOTARY_PROFILE='total-command-notary' \
 ./scripts/release.sh
 ```
