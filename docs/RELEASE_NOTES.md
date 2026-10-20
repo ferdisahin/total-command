@@ -1,4 +1,4 @@
-Total Command 0.2.2 (unreleased preview)
+Total Command 0.2.2 (published preview)
 
 - Check for updates from the application menu or Settings → Updates.
 - Optional daily/weekly checks; optional preview releases. Automatic checks are off by default.

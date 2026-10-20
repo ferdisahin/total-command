@@ -1,4 +1,4 @@
-# Total Command 0.2.1
+# Total Command 0.2.2
 
 <img src="Resources/AppIcon.png" width="96" alt="Total Command ikonu">
 
@@ -6,7 +6,7 @@ macOS için Swift/AppKit ile geliştirilmiş, Total Commander’ın çift panel 
 
 ## Açma ve derleme
 
-[İmzalı ve Apple noter onaylı DMG’yi indirin](https://github.com/ferdisahin/total-command/releases/tag/v0.2.1), açın ve `TotalCommand.app` dosyasını Uygulamalar klasörüne sürükleyin. Intel/Apple Silicon ve macOS 13+ içindir. 0.2.1 erken önizleme sürümüdür.
+[İmzalı ve Apple noter onaylı DMG’yi indirin](https://github.com/ferdisahin/total-command/releases/tag/v0.2.2), açın ve `TotalCommand.app` dosyasını Uygulamalar klasörüne sürükleyin. Intel/Apple Silicon ve macOS 13+ içindir. 0.2.2 erken önizleme sürümüdür.
 
 Homebrew ile kurulum:
 
@@ -18,9 +18,9 @@ Güncellemek için `brew update` ardından `brew upgrade --cask ferdisahin/tap/t
 
 Kaynaklardan derlemek için Xcode komut satırı araçlarıyla `./build.sh`, testler için `./test.sh` çalıştırın. Harici paket kurulumu gerekmez. Arşiv işlemleri macOS’un `/usr/bin/bsdtar` aracını kullanır.
 
-## Geliştirme: 0.2.2 güncelleme kontrolü
+## Güncelleme kontrolü
 
-Menüden **Total Command → Güncellemeleri Kontrol Et…** veya **Ayarlar → Güncellemeler** üzerinden yeni sürüm kontrolü yapılabilir. İsteğe bağlı günlük/haftalık kontrol ve önizleme kanalı vardır. Otomatik kontrol varsayılan olarak kapalıdır. Yeni sürüm bulunduğunda GitHub indirme sayfası açılır; uygulama kendini otomatik olarak değiştirmez. Bu özellik henüz yayımlanmış 0.2.1 paketinde yoktur. Ayrıntılar: [güncelleme davranışı](docs/UPDATES.md).
+Menüden **Total Command → Güncellemeleri Kontrol Et…** veya **Ayarlar → Güncellemeler** üzerinden yeni sürüm kontrolü yapılabilir. İsteğe bağlı günlük/haftalık kontrol ve önizleme kanalı vardır. Otomatik kontrol varsayılan olarak kapalıdır. Yeni sürüm bulunduğunda GitHub indirme sayfası açılır; uygulama kendini otomatik olarak değiştirmez. Ayrıntılar: [güncelleme davranışı](docs/UPDATES.md).
 
 ## Dosya yönetimi
 
@@ -82,4 +82,4 @@ Arayüzde çift panel, liste/simge görünümü, sekme açma/kapatma, kopyalama,
 
 Copyright © 2026 Ferdi Sahin. **GPL-3.0-only**; tam metin [LICENSE](LICENSE). Dağıtılan değiştirilmiş sürümlerin ilgili kaynakları da GPLv3 koşullarıyla sunulmalıdır. Yazılım garanti verilmeden sağlanır.
 
-GitHub hedefi: [ferdisahin/total-command](https://github.com/ferdisahin/total-command). Açık kaynak depo ve Developer ID ile imzalanıp Apple noter onayı alınmış 0.2.1 önizleme sürümü yayınlandı. Homebrew dağıtımı [kişisel tap](https://github.com/ferdisahin/homebrew-tap) üzerinden yapılır; merkezi Homebrew Cask kataloğuna kabul edildiği anlamına gelmez. İmzalama, noter onayı ve kişisel Homebrew tap kurulumu için [dağıtım rehberi](docs/DISTRIBUTION.md).
+GitHub hedefi: [ferdisahin/total-command](https://github.com/ferdisahin/total-command). Açık kaynak depo ve Developer ID ile imzalanıp Apple noter onayı alınmış 0.2.2 önizleme sürümü yayınlandı. Homebrew dağıtımı [kişisel tap](https://github.com/ferdisahin/homebrew-tap) üzerinden yapılır; merkezi Homebrew Cask kataloğuna kabul edildiği anlamına gelmez. İmzalama, noter onayı ve kişisel Homebrew tap kurulumu için [dağıtım rehberi](docs/DISTRIBUTION.md).
