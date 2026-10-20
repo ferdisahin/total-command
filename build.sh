@@ -15,7 +15,7 @@ binaries=()
 for arch in ${=BUILD_ARCHS}; do
   case "$arch" in arm64|x86_64) ;; *) print -u2 "Unsupported architecture: $arch"; exit 1 ;; esac
   binary="$BUILD_WORK/TotalCommand-$arch"
-  swiftc -O -target "$arch-apple-macos13.0" Sources/Localization.swift Sources/Core.swift Sources/Jobs.swift Sources/Remote.swift Sources/SiteManager.swift Sources/Diff.swift Sources/DiffWindow.swift Sources/MultiRename.swift Sources/FileSplitter.swift Sources/SyncEngine.swift Sources/SyncWindow.swift Sources/Updates.swift Sources/Settings.swift Sources/QueueWindow.swift Sources/main.swift \
+  swiftc -O -target "$arch-apple-macos13.0" Sources/Localization.swift Sources/Core.swift Sources/Jobs.swift Sources/Remote.swift Sources/SiteManager.swift Sources/Diff.swift Sources/DiffWindow.swift Sources/MultiRename.swift Sources/FileSplitter.swift Sources/SyncEngine.swift Sources/SyncWindow.swift Sources/ChecksumEngine.swift Sources/ChecksumWindow.swift Sources/Updates.swift Sources/Settings.swift Sources/QueueWindow.swift Sources/main.swift \
     -o "$binary" -framework Cocoa -framework QuickLookUI -framework QuickLookThumbnailing \
     -module-cache-path "${TMPDIR:-/tmp}/total-command-module-cache/$arch"
   binaries+=("$binary")

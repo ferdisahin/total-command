@@ -456,3 +456,27 @@
 "Özellikler / Bilgi Al" = "Özellikler / Bilgi Al";
 
 "Sık Kullanılan Klasörler…" = "Sık Kullanılan Klasörler…";
+
+"Sağlama Toplamı Oluştur…" = "Sağlama Toplamı Oluştur…";
+"Sağlama Toplamını Doğrula…" = "Sağlama Toplamını Doğrula…";
+"Sağlama Toplamı Oluştur (Checksum)" = "Sağlama Toplamı Oluştur (Checksum)";
+"Sağlama Toplamını Doğrula:" = "Sağlama Toplamını Doğrula:";
+"Sağlama toplamı oluşturuluyor" = "Sağlama toplamı oluşturuluyor";
+"Geçti (OK)" = "Geçti (OK)";
+"Hatalı (Uyuşmuyor)" = "Hatalı (Uyuşmuyor)";
+"Eksik (Bulunamadı)" = "Eksik (Bulunamadı)";
+"Hesaplanıyor… ({0})" = "Hesaplanıyor… ({0})";
+"{0} dosya kontrol edildi: {1} geçerli, {2} hatalı, {3} eksik" = "{0} dosya kontrol edildi: {1} geçerli, {2} hatalı, {3} eksik";
+"Her dosya için ayrı sağlama dosyası oluştur" = "Her dosya için ayrı sağlama dosyası oluştur";
+"Beklenen Özet" = "Beklenen Özet";
+"Hesaplanan Özet" = "Hesaplanan Özet";
+"{0} dosya seçildi" = "{0} dosya seçildi";
+
+"Sağlama toplamı oluşturmak için en az bir dosya seçin." = "Sağlama toplamı oluşturmak için en az bir dosya seçin.";
+
+"Algoritma:" = "Algoritma:";
+"Dosya" = "Dosya";
+"Dosya:" = "Dosya:";
+"Doğrulama işlemi iptal edildi." = "Doğrulama işlemi iptal edildi.";
+"Oluştur" = "Oluştur";
+"Seçili Dosyalar:" = "Seçili Dosyalar:";

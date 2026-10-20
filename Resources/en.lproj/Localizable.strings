@@ -456,3 +456,27 @@
 "Özellikler / Bilgi Al" = "Properties / Get Info";
 
 "Sık Kullanılan Klasörler…" = "Directory Hotlist…";
+
+"Sağlama Toplamı Oluştur…" = "Create Checksum…";
+"Sağlama Toplamını Doğrula…" = "Verify Checksums…";
+"Sağlama Toplamı Oluştur (Checksum)" = "Create Checksum";
+"Sağlama Toplamını Doğrula:" = "Verify Checksum:";
+"Sağlama toplamı oluşturuluyor" = "Creating checksums";
+"Geçti (OK)" = "OK";
+"Hatalı (Uyuşmuyor)" = "Mismatch";
+"Eksik (Bulunamadı)" = "Missing";
+"Hesaplanıyor… ({0})" = "Calculating… ({0})";
+"{0} dosya kontrol edildi: {1} geçerli, {2} hatalı, {3} eksik" = "{0} files checked: {1} OK, {2} mismatch, {3} missing";
+"Her dosya için ayrı sağlama dosyası oluştur" = "Create separate checksum file for each file";
+"Beklenen Özet" = "Expected Checksum";
+"Hesaplanan Özet" = "Calculated Checksum";
+"{0} dosya seçildi" = "{0} files selected";
+
+"Sağlama toplamı oluşturmak için en az bir dosya seçin." = "Select at least one file to create checksums.";
+
+"Algoritma:" = "Algorithm:";
+"Dosya" = "File";
+"Dosya:" = "File:";
+"Doğrulama işlemi iptal edildi." = "Verification cancelled.";
+"Oluştur" = "Create";
+"Seçili Dosyalar:" = "Selected Files:";
