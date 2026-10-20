@@ -427,3 +427,8 @@
 "Şablon birden fazla dosyaya aynı adı veriyor." = "The pattern assigns the same name to more than one file.";
 "Şifre:" = "Password:";
 "Şimdi Kontrol Et" = "Check Now";
+
+"Ağ & Arşiv" = "Network & Archive";
+"Araçlar" = "Tools";
+"Dosya & Görünüm" = "File & View";
+"Klasörleri Eşitle…" = "Synchronize Dirs…";

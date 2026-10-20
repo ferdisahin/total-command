@@ -361,11 +361,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             pane.table.menu = context; pane.grid.menu = context.copy() as? NSMenu
         }
         let top = NSStackView(); top.spacing = 8
-        for (title, action) in [(L("Ayarlar"), #selector(settings)), (L("Klasör Aç"), #selector(chooseFolder)), (L("Yenile"), #selector(refresh)), (L("Gizli Dosyalar"), #selector(hidden)), (L("Karşılaştır"), #selector(compare)), (L("Dosya Ara"), #selector(find)), (L("Toplu Adlandır"), #selector(batchRename)), (L("Sıkıştır"), #selector(pack)), (L("Çıkar"), #selector(unpack))] { top.addArrangedSubview(button(title, action)) }
-        top.addArrangedSubview(button(L("FTP"), #selector(showSiteManager)))
-        top.addArrangedSubview(button(L("İçerik Karşılaştır"), #selector(compareContent)))
+        let fileMenu = pullDownButton(L("Dosya & Görünüm"), items: [
+            (L("Klasör Aç…"), #selector(chooseFolder)),
+            (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden)),
+            (L("Dosya Ara…"), #selector(find)),
+            ("-", nil),
+            (L("Finder’da Göster"), #selector(reveal)),
+            (L("Terminal’de Aç"), #selector(terminal)),
+            (L("Yolu Kopyala"), #selector(copyPath))
+        ])
+        let toolsMenu = pullDownButton(L("Araçlar"), items: [
+            (L("Toplu Yeniden Adlandır…"), #selector(batchRename)),
+            (L("Klasörleri Eşitle…"), #selector(sync)),
+            (L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent)),
+            ("-", nil),
+            (L("Dosyayı Böl…"), #selector(splitFile)),
+            (L("Dosyaları Birleştir…"), #selector(combineFiles)),
+            ("-", nil),
+            (L("Panelleri Karşılaştır"), #selector(compare)),
+            (L("Panelleri Değiştir"), #selector(swap))
+        ])
+        let netMenu = pullDownButton(L("Ağ & Arşiv"), items: [
+            (L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager)),
+            (L("Hızlı Bağlan…"), #selector(showQuickConnect)),
+            ("-", nil),
+            (L("Sıkıştır"), #selector(pack)),
+            (L("Çıkar"), #selector(unpack))
+        ])
+        top.addArrangedSubview(fileMenu)
+        top.addArrangedSubview(toolsMenu)
+        top.addArrangedSubview(netMenu)
+        top.addArrangedSubview(button(L("Yenile"), #selector(refresh)))
         queueButton.target = self; queueButton.action = #selector(showQueue); top.addArrangedSubview(queueButton)
-        top.addArrangedSubview(NSView())
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        top.addArrangedSubview(spacer)
+        top.addArrangedSubview(button(L("Ayarlar"), #selector(settings)))
         let bottom = NSStackView(); bottom.distribution = .fillEqually; bottom.spacing = 4
         for (i, pair) in [(L("F3 Önizle"), #selector(preview)), (L("F4 Düzenle"), #selector(editFile)), (L("F5 Kopyala"), #selector(copyFiles)), (L("F6 Taşı"), #selector(moveFiles)), (L("F7 Klasör"), #selector(newFolder)), (L("F8 Çöpe Taşı"), #selector(trash))].enumerated() { let b = button(pair.0, pair.1); actionButtons[i + 3] = b; bottom.addArrangedSubview(b) }
         progress.isIndeterminate = false; progress.minValue = 0; progress.maxValue = 1; progress.style = .bar; progress.widthAnchor.constraint(equalToConstant: 180).isActive = true; progress.isHidden = true
@@ -387,6 +418,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         DispatchQueue.main.async { [weak self] in self?.checkAutomaticUpdates() }
     }
     func button(_ title: String, _ action: Selector) -> NSButton { NSButton(title: title, target: self, action: action) }
+    func pullDownButton(_ title: String, items: [(String, Selector?)]) -> NSPopUpButton {
+        let btn = NSPopUpButton(frame: .zero, pullsDown: true)
+        btn.bezelStyle = .rounded
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: title, action: nil, keyEquivalent: ""))
+        for (label, action) in items {
+            if label == "-" || action == nil {
+                menu.addItem(NSMenuItem.separator())
+            } else {
+                let item = NSMenuItem(title: label, action: action, keyEquivalent: "")
+                item.target = self
+                menu.addItem(item)
+            }
+        }
+        btn.menu = menu
+        return btn
+    }
     func buildMenus() {
         let root = NSMenu(); NSApp.mainMenu = root
         func submenu(_ title: String, _ items: [(String, Selector, String)]) {
