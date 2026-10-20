@@ -21,7 +21,7 @@ jobs:
           BUILD_ARCHS: arm64 x86_64
         run: ./build.sh
       - name: Verify both architectures
-        run: lipo -verify_arch arm64 x86_64 TotalCommand.app/Contents/MacOS/TotalCommand
+        run: lipo TotalCommand.app/Contents/MacOS/TotalCommand -verify_arch arm64 x86_64
       - name: Package development build
         run: ditto -c -k --sequesterRsrc --keepParent TotalCommand.app Total-Command-development.zip
       - uses: actions/upload-artifact@v7
