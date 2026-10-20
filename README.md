@@ -1,4 +1,4 @@
-# Total Command 0.2
+# Total Command 0.2.1
 
 macOS için Swift/AppKit ile geliştirilmiş, Total Commander’ın çift panel çalışma biçiminden esinlenen bağımsız dosya yöneticisi.
 

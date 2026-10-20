@@ -38,7 +38,7 @@ The GitHub owner is `ferdisahin` and the license is GPL-3.0-only. Confirm the st
 
 The CI workflow builds and tests pull requests without signing secrets. CI artifacts are clearly marked as development builds. The maintainer signs releases locally, so certificates do not need to be uploaded to GitHub.
 
-Once the public repository exists and the release source is committed, create and push an annotated `v0.2.0` tag from that exact commit. Upload the matching final artifacts using the GitHub release UI, or with authenticated GitHub CLI:
+Once the public repository exists and the release source is committed, create and push an annotated `v0.2.1` tag from that exact commit. Upload the matching final artifacts using the GitHub release UI, or with authenticated GitHub CLI:
 
 ```sh
 ./scripts/publish.sh ferdisahin/total-command

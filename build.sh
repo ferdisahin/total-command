@@ -6,6 +6,7 @@ BUILD_WORK=$(mktemp -d "${TMPDIR:-/tmp}/total-command-build.XXXXXX")
 trap 'rm -rf "$BUILD_WORK"' EXIT
 mkdir -p TotalCommand.app/Contents/MacOS TotalCommand.app/Contents/Resources
 cp Resources/Info.plist TotalCommand.app/Contents/Info.plist
+cp Resources/AppIcon.icns TotalCommand.app/Contents/Resources/AppIcon.icns
 if [[ -f LICENSE ]]; then cp LICENSE TotalCommand.app/Contents/Resources/LICENSE; fi
 binaries=()
 for arch in ${=BUILD_ARCHS}; do

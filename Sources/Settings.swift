@@ -80,7 +80,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         for n in 3...8 { popup("F\(n)", "keyF\(n)", actions, keys) }
         tabs.selectTabViewItem(at: 0)
         let footer = NSStackView(); footer.spacing = 10
-        let label = NSTextField(labelWithString: "Total Command 0.2 · Değişiklikler otomatik kaydedilir"); label.font = .systemFont(ofSize: 11); label.textColor = .secondaryLabelColor
+        let label = NSTextField(labelWithString: "Total Command \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.1") · Değişiklikler otomatik kaydedilir"); label.font = .systemFont(ofSize: 11); label.textColor = .secondaryLabelColor
         footer.addArrangedSubview(label); footer.addArrangedSubview(NSView()); footer.addArrangedSubview(NSButton(title: "Varsayılanlara Dön…", target: self, action: #selector(reset)))
         footer.translatesAutoresizingMaskIntoConstraints = false
         let content = window!.contentView!; content.subviews.forEach { $0.removeFromSuperview() }; content.addSubview(tabs); content.addSubview(footer)
