@@ -4,15 +4,20 @@
 import Foundation
 @main struct Tests {
     static func main() throws {
+        try testUpdates()
         let suite = "TotalCommand.Test." + UUID().uuidString
         Prefs.store = UserDefaults(suiteName: suite)!
         Prefs.register()
+        assert(Prefs.int("updateInterval") == 0 && !Prefs.bool("updatePreviews"))
+        Prefs.set("updateInterval", 7); Prefs.set("updatePreviews", true)
+        assert(Prefs.int("updateInterval") == 7 && Prefs.bool("updatePreviews"))
         assert(Prefs.int("fontSize") == 12 && Prefs.bool("confirmTrash"))
         Prefs.set("fontSize", 14); Prefs.set("restoreTabs", false); Prefs.set("keyF5", "rename")
         assert(Prefs.int("fontSize") == 14 && !Prefs.bool("restoreTabs") && Prefs.string("keyF5") == "rename")
         Prefs.store.synchronize()
         assert(UserDefaults(suiteName: suite)!.integer(forKey: "fontSize") == 14)
         Prefs.store.removePersistentDomain(forName: suite)
+        assert(Prefs.int("updateInterval") == 0 && !Prefs.bool("updatePreviews"))
         assert(Prefs.int("fontSize") == 12)
         let fm = FileManager.default
         let root = fm.temporaryDirectory.appendingPathComponent("TotalCommand-Tests-" + UUID().uuidString)

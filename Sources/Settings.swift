@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 enum Prefs {
     static var store = UserDefaults.standard
     static let defaults: [String: Any] = [
+        "updateInterval": 0, "updatePreviews": false,
         "commandBar": true, "theme": "system", "fontSize": 12, "rowHeight": 24, "foldersFirst": true,
         "extensions": true, "thumbnails": true, "dateStyle": "short", "defaultView": 0,
         "hiddenDefault": false, "restoreTabs": true, "confirmTrash": true, "confirmMove": false,
@@ -26,6 +27,11 @@ enum Prefs {
 }
 final class SettingsController: NSWindowController, NSTextFieldDelegate {
     var changed: (() -> Void)?
+    var checkForUpdates: (() -> Void)?
+    private var updateButton: NSButton?
+    private var updateStatus: NSTextField?
+    var updateMessage = "" { didSet { updateStatus?.stringValue = updateMessage } }
+    var checkingUpdates = false { didSet { updateButton?.isEnabled = !checkingUpdates } }
     private var controls: [String: NSControl] = [:]
     init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 850, height: 650), styleMask: [.titled, .closable], backing: .buffered, defer: false)
@@ -78,6 +84,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         check("Boşluk tuşuyla Quick Look önizleme", "spacePreview", keys)
         let actions: [(String, Any)] = [("Önizle", "preview"), ("Düzenle", "edit"), ("Kopyala", "copy"), ("Taşı", "move"), ("Yeni klasör", "folder"), ("Çöpe taşı", "trash"), ("Yeniden adlandır", "rename"), ("Dosya ara", "find")]
         for n in 3...8 { popup("F\(n)", "keyF\(n)", actions, keys) }
+        let updates = page("Güncellemeler", "Yeni sürümleri GitHub üzerinden kontrol edin. İndirme sayfasını açarak kurulumu kendiniz başlatabilirsiniz.")
+        popup("Otomatik kontrol", "updateInterval", [("Yalnızca elle", 0), ("Günde bir", 1), ("Haftada bir", 7)], updates)
+        check("Önizleme sürümlerini de bildir", "updatePreviews", updates)
+        let privacy = NSTextField(wrappingLabelWithString: "Kontrol sırasında GitHub’a uygulama sürümü ve standart bağlantı bilgileri iletilir. Dosyalarınız ve dosya yollarınız gönderilmez. Otomatik kontrol varsayılan olarak kapalıdır.")
+        privacy.widthAnchor.constraint(equalToConstant: 720).isActive = true; privacy.textColor = .secondaryLabelColor; privacy.font = .systemFont(ofSize: 12); updates.addArrangedSubview(privacy)
+        let updateButton = NSButton(title: "Şimdi Kontrol Et", target: self, action: #selector(checkUpdates)); updateButton.isEnabled = !checkingUpdates; self.updateButton = updateButton; updates.addArrangedSubview(updateButton)
+        let status = NSTextField(wrappingLabelWithString: updateMessage); status.widthAnchor.constraint(equalToConstant: 720).isActive = true; status.font = .systemFont(ofSize: 12); updateStatus = status; updates.addArrangedSubview(status)
         tabs.selectTabViewItem(at: 0)
         let footer = NSStackView(); footer.spacing = 10
         let label = NSTextField(labelWithString: "Total Command \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.1") · Değişiklikler otomatik kaydedilir"); label.font = .systemFont(ofSize: 11); label.textColor = .secondaryLabelColor
@@ -121,6 +134,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         else if let button = sender as? NSButton { Prefs.set(key, button.state == .on) }
         changed?()
     }
+    @objc func checkUpdates() { checkForUpdates?() }
     @objc func reset() {
         let alert = NSAlert(); alert.messageText = "Ayarlar varsayılana dönsün mü?"; alert.informativeText = "Favoriler ve kayıtlı sekmeler korunur."; alert.addButton(withTitle: "Varsayılana Dön"); alert.addButton(withTitle: "Vazgeç")
         guard alert.runModal() == .alertFirstButtonReturn else { return }; for key in Prefs.defaults.keys { UserDefaults.standard.removeObject(forKey: key) }; build(); changed?()

@@ -9,7 +9,7 @@ Checked on 2026-10-20.
 
 ## Remaining manual checks
 
-This was not a test on a separate clean Mac. Homebrew audit stopped because the installed Command Line Tools are older than Homebrew requires. Homebrew installation in the agent environment stopped because nested sandbox-exec is prohibited; no sandbox protections were disabled. DMG mounting was also unavailable in this environment. Therefore a complete Homebrew install/uninstall and Gatekeeper first launch still need verification in a normal user Terminal on a clean machine.
+This was not a test on a separate clean Mac. Homebrew audit stopped because the installed Command Line Tools are older than Homebrew requires. Homebrew installation in the agent environment stopped because nested sandbox-exec is prohibited; no sandbox protections were disabled. DMG mounting was also unavailable in this environment. The maintainer subsequently confirmed a successful normal-Terminal Homebrew installation of 0.2.1 into /Applications. Uninstall and Gatekeeper first launch on a separate clean machine remain unverified.
 
 ```sh
 brew install --cask ferdisahin/tap/total-command
@@ -18,3 +18,9 @@ brew install --cask ferdisahin/tap/total-command
 Open TotalCommand.app and check Finder permissions, both panels, copy/move cancellation, and large-file behavior. Also test on an Intel Mac and the minimum supported macOS release before promoting this preview to stable.
 
 To remove a test installation: `brew uninstall --cask total-command`. This retains preferences; `--zap` removes them.
+
+## 0.2.2 development checks
+
+Added semantic-version/channel selection tests, invalid feed and HTTP error tests, and daily/weekly scheduling tests. Update settings defaults and reset are covered. A live GitHub check from the new native settings tab completed successfully and displayed no newer eligible version. Universal development build and the existing file-operation suite passed. This is not a signed 0.2.2 release validation.
+
+A separate QA app with injected HTTP fixtures also verified the loading state, persistent HTTP 429 rate-limit explanation, and update-available alert. The synthetic v9.0.0 fixture was not published. Native layout was reviewed in the existing light appearance; dark appearance and VoiceOver were not separately exercised.

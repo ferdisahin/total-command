@@ -219,6 +219,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     var commandBar: NSView?
     var logWindows: [NSWindow] = []
     var settingsController: SettingsController?
+    let updateChecker = UpdateChecker()
+    var updateTimer: Timer?
+    var manualUpdateRequested = false
+    var pendingUpdate: AppRelease?
+    var pendingUpdateIsManual = false
     var job: JobState?; var process: Process?; var previewURLs: [URL] = []; var temporary: [URL] = []
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular); buildMenus()
@@ -256,6 +261,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         applySettings()
         window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); window.makeFirstResponder(left.table)
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in guard let self else { return event }; return self.key(event) }
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in self?.checkAutomaticUpdates() }
+        DispatchQueue.main.async { [weak self] in self?.checkAutomaticUpdates() }
     }
     func button(_ title: String, _ action: Selector) -> NSButton { NSButton(title: title, target: self, action: action) }
     func buildMenus() {
@@ -264,7 +271,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             let item = NSMenuItem(); item.title = title; root.addItem(item); let menu = NSMenu(title: title); item.submenu = menu
             for (label, action, key) in items { let child = NSMenuItem(title: label, action: action, keyEquivalent: key); child.target = self; menu.addItem(child) }
         }
-        submenu("Total Command", [("Total Command Hakkında", #selector(about), ""), ("Ayarlar…", #selector(settings), ","), ("Çık", #selector(quit), "q")])
+        submenu("Total Command", [("Total Command Hakkında", #selector(about), ""), ("Güncellemeleri Kontrol Et…", #selector(checkUpdates), ""), ("Ayarlar…", #selector(settings), ","), ("Çık", #selector(quit), "q")])
         submenu("Dosyalar", [("Klasör Aç…", #selector(chooseFolder), "o"), ("Yeni Klasör…", #selector(newFolder), ""), ("Yeni Metin Dosyası…", #selector(newFile), ""), ("Yeniden Adlandır…", #selector(rename), ""), ("Toplu Yeniden Adlandır…", #selector(batchRename), "m"), ("Bilgi Al", #selector(info), "i"), ("Finder’da Göster", #selector(reveal), ""), ("Çöpe Taşı…", #selector(trash), "")])
         submenu("Seçim", [("Tümünü Seç", #selector(selectAll), "a"), ("Seçimi Tersine Çevir", #selector(invert), ""), ("Desene Göre Seç…", #selector(selectPattern), ""), ("Seçimi Temizle", #selector(clearSelection), "")])
         submenu("Komutlar", [("Kopyala", #selector(copyFiles), ""), ("Taşı", #selector(moveFiles), ""), ("Dosya Ara…", #selector(find), "f"), ("Panelleri Karşılaştır", #selector(compare), ""), ("Etkin Panelden Hedefe Eşitle…", #selector(sync), ""), ("Panelleri Değiştir", #selector(swap), "u"), ("Terminal’de Aç", #selector(terminal), ""), ("Yolu Kopyala", #selector(copyPath), "")])
@@ -292,7 +299,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     }
     func dispatchAction(_ action: String) { switch action { case "preview": preview(); case "edit": editFile(); case "copy": copyFiles(); case "move": moveFiles(); case "folder": newFolder(); case "trash": trash(); case "rename": rename(); case "find": find(); default: break } }
     @objc func settings() {
-        if settingsController == nil { settingsController = SettingsController(); settingsController?.changed = { [weak self] in self?.applySettings() } }
+        if settingsController == nil { settingsController = SettingsController(); settingsController?.changed = { [weak self] in self?.applySettings() }; settingsController?.checkForUpdates = { [weak self] in self?.checkUpdates() } }
+        settingsController?.checkingUpdates = updateChecker.isChecking
         settingsController?.showWindow(nil); settingsController?.window?.makeKeyAndOrderFront(nil)
     }
     func applySettings() {
@@ -478,6 +486,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     @objc func addBookmark() { var paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; if !paths.contains(active.location.path) { paths.append(active.location.path); UserDefaults.standard.set(paths, forKey: "bookmarks") }; indicator.stringValue = "Favorilere eklendi: " + active.location.lastPathComponent }
     @objc func bookmarks() { let paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; guard !paths.isEmpty else { show(PanelError(message: "Henüz favori yok. Command+D ile klasör ekleyin.")); return }; let a = NSAlert(); a.messageText = "Favori klasörler"; let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 550, height: 28)); popup.addItems(withTitles: paths); a.accessoryView = popup; a.addButton(withTitle: "Git"); a.addButton(withTitle: "Vazgeç"); if a.runModal() == .alertFirstButtonReturn { active.navigate(URL(fileURLWithPath: paths[popup.indexOfSelectedItem])) } }
     @objc func about() { let a = NSAlert(); a.messageText = "Total Command \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.1")"; a.informativeText = "macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama."; a.addButton(withTitle: "Tamam"); a.addButton(withTitle: "Lisansı Gör"); a.addButton(withTitle: "Kaynak Kod"); let result = a.runModal(); if result == .alertSecondButtonReturn { self.showLicense() } else if result == .alertThirdButtonReturn { NSWorkspace.shared.open(URL(string: "https://github.com/ferdisahin/total-command")!) } }
+    @objc func checkUpdates() { performUpdateCheck(manual: true) }
+    func checkAutomaticUpdates() {
+        guard NSApp.isActive, job == nil, NSApp.modalWindow == nil, window.attachedSheet == nil else { return }
+        if let release = pendingUpdate {
+            pendingUpdate = nil
+            if (pendingUpdateIsManual || Prefs.int("updateInterval") != 0) && (!release.isPreview || Prefs.bool("updatePreviews")) { presentUpdate(release) }
+            return
+        }
+        guard ReleaseFeed.isDue(interval: Prefs.int("updateInterval"), lastAttempt: Prefs.store.object(forKey: "updateLastAttempt") as? Date) else { return }
+        performUpdateCheck(manual: false)
+    }
+    func performUpdateCheck(manual: Bool) {
+        if updateChecker.isChecking { manualUpdateRequested = manualUpdateRequested || manual; return }
+        manualUpdateRequested = manual
+        settingsController?.checkingUpdates = true
+        settingsController?.updateMessage = "GitHub’da yeni sürüm aranıyor…"
+        Prefs.set("updateLastAttempt", Date())
+        let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.2"
+        updateChecker.check(current: current, includePreviews: Prefs.bool("updatePreviews")) { [weak self] result in
+            guard let self else { return }
+            let requested = self.manualUpdateRequested; self.manualUpdateRequested = false
+            self.settingsController?.checkingUpdates = false
+            switch result {
+            case .success(let release):
+                self.settingsController?.updateMessage = release.map { "Yeni sürüm: \($0.tag)" } ?? "Seçili kanalda \(current) sürümünden daha yeni bir sürüm yok."
+                if let release {
+                    if (requested || Prefs.int("updateInterval") != 0) && (!release.isPreview || Prefs.bool("updatePreviews")) && (requested || Prefs.string("updateNotifiedTag") != release.tag) { self.pendingUpdate = release; self.pendingUpdateIsManual = requested }
+                } else if requested {
+                    let alert = NSAlert(); alert.messageText = "Yeni sürüm bulunamadı"; alert.informativeText = "Yüklü sürüm: \(current).\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz."; alert.runModal()
+                }
+            case .failure(let error):
+                self.settingsController?.updateMessage = "Kontrol tamamlanamadı. " + error.localizedDescription
+                if requested { self.show(PanelError(message: "Güncelleme kontrolü tamamlanamadı.\n" + error.localizedDescription)) }
+            }
+            if (requested || NSApp.isActive), self.job == nil, NSApp.modalWindow == nil, self.window.attachedSheet == nil, let release = self.pendingUpdate { self.pendingUpdate = nil; self.presentUpdate(release) }
+        }
+    }
+    func presentUpdate(_ release: AppRelease) {
+        Prefs.set("updateNotifiedTag", release.tag)
+        let alert = NSAlert(); alert.messageText = "Total Command \(release.tag) hazır"
+        alert.informativeText = "\(release.isPreview ? "Bu bir önizleme sürümüdür.\n" : "")Sürüm notlarını ve imzalı indirmeleri GitHub’da açabilirsiniz. Homebrew ile kurduysanız brew update ve brew upgrade --cask total-command komutlarını kullanabilirsiniz."
+        alert.addButton(withTitle: "İndirme Sayfasını Aç"); alert.addButton(withTitle: "Daha Sonra")
+        if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(release.pageURL) }
+    }
     func showLicense() {
         guard let url = Bundle.main.url(forResource: "LICENSE", withExtension: nil), let text = try? String(contentsOf: url, encoding: .utf8) else { return }
         let log = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 780, height: 560), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false); log.title = "Total Command — GNU GPLv3"; log.isReleasedWhenClosed = false
@@ -486,7 +538,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     }
     @objc func quit() { NSApp.terminate(nil) }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { if job != nil { let a = NSAlert(); a.messageText = "Önce devam eden işlemi tamamlayın veya İptal’e basın."; a.runModal(); return .terminateCancel }; return .terminateNow }
-    func applicationWillTerminate(_ notification: Notification) { left.save("leftTabs"); right.save("rightTabs"); for u in temporary { try? FileManager.default.removeItem(at: u) } }
+    func applicationWillTerminate(_ notification: Notification) { updateTimer?.invalidate(); left.save("leftTabs"); right.save("rightTabs"); for u in temporary { try? FileManager.default.removeItem(at: u) } }
     func windowShouldClose(_ sender: NSWindow) -> Bool { job == nil }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }

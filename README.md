@@ -18,6 +18,10 @@ Güncellemek için `brew update` ardından `brew upgrade --cask ferdisahin/tap/t
 
 Kaynaklardan derlemek için Xcode komut satırı araçlarıyla `./build.sh`, testler için `./test.sh` çalıştırın. Harici paket kurulumu gerekmez. Arşiv işlemleri macOS’un `/usr/bin/bsdtar` aracını kullanır.
 
+## Geliştirme: 0.2.2 güncelleme kontrolü
+
+Menüden **Total Command → Güncellemeleri Kontrol Et…** veya **Ayarlar → Güncellemeler** üzerinden yeni sürüm kontrolü yapılabilir. İsteğe bağlı günlük/haftalık kontrol ve önizleme kanalı vardır. Otomatik kontrol varsayılan olarak kapalıdır. Yeni sürüm bulunduğunda GitHub indirme sayfası açılır; uygulama kendini otomatik olarak değiştirmez. Bu özellik henüz yayımlanmış 0.2.1 paketinde yoktur. Ayrıntılar: [güncelleme davranışı](docs/UPDATES.md).
+
 ## Dosya yönetimi
 
 - İki bağımsız panel, panel başına sekmeler, liste/simge görünümü.

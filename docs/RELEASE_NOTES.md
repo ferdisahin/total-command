@@ -1,3 +1,12 @@
+Total Command 0.2.2 (unreleased preview)
+
+- Check for updates from the application menu or Settings → Updates.
+- Optional daily/weekly checks; optional preview releases. Automatic checks are off by default.
+- Numeric semantic-version comparison, explicit network failures, and notifications deferred during file operations.
+- Opens the GitHub release page for user-initiated installation; does not replace the application automatically.
+
+---
+
 Total Command 0.2.1 is an early macOS preview with a native dual-pane interface.
 
 Includes tabs, list/icon views, Quick Look thumbnails, background copy/move, drag and drop, batch rename previews, folder comparison, one-way synchronization with backups, ZIP/7z creation and archive extraction, a command bar, and six categories of persistent settings.
