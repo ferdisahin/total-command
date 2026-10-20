@@ -311,6 +311,23 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     func collectionView(_ collectionView: NSCollectionView, pasteboardWriterForItemAt indexPath: IndexPath) -> NSPasteboardWriting? { entries[indexPath.item].isParent ? nil : entries[indexPath.item].url as NSURL }
 }
 
+final class WindowMenuButton: NSButton {
+    var menuToOpen: NSMenu?
+    init(title: String, menu: NSMenu) {
+        self.menuToOpen = menu
+        super.init(frame: .zero)
+        self.title = title
+        self.isBordered = false
+        self.font = .systemFont(ofSize: 12, weight: .regular)
+        self.contentTintColor = .labelColor
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    override func mouseDown(with event: NSEvent) {
+        guard let menu = menuToOpen else { super.mouseDown(with: event); return }
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: bounds.height + 2), in: self)
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPreviewPanelDataSource {
     var window: NSWindow!
     let left = FilePane(), right = FilePane()
@@ -336,6 +353,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     var splitController: SplitWindowController?
     var combineController: CombineWindowController?
     var syncWindowController: SyncWindowController?
+    var filesMenu: NSMenu?
+    var markMenu: NSMenu?
+    var commandsMenu: NSMenu?
+    var netMenu: NSMenu?
+    var showMenu: NSMenu?
+    var configMenu: NSMenu?
+    var startMenu: NSMenu?
+    var helpMenu: NSMenu?
     var job: JobState? { operations.current?.control }
     var process: Process?; var previewURLs: [URL] = []; var temporary: [URL] = []
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -360,6 +385,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             for (title, action) in [(L("Aç"), #selector(openItem)), (L("Önizle"), #selector(preview)), (L("Karşı panele kopyala"), #selector(copyFiles)), (L("Karşı panele taşı"), #selector(moveFiles)), (L("Yeniden adlandır…"), #selector(rename)), (L("Yolu kopyala"), #selector(copyPath)), (L("Finder’da göster"), #selector(reveal)), (L("Çöpe taşı…"), #selector(trash))] { let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; context.addItem(item) }
             pane.table.menu = context; pane.grid.menu = context.copy() as? NSMenu
         }
+        let menuRow = NSStackView()
+        menuRow.spacing = 14
+        menuRow.alignment = .centerY
+        menuRow.edgeInsets = NSEdgeInsets(top: 2, left: 6, bottom: 2, right: 6)
+        for (title, menu) in [
+            (L("Dosyalar"), filesMenu),
+            (L("Seçim"), markMenu),
+            (L("Komutlar"), commandsMenu),
+            (L("Ağ"), netMenu),
+            (L("Görünüm"), showMenu),
+            (L("Yapılandırma"), configMenu),
+            (L("Başlat"), startMenu),
+            (L("Yardım"), helpMenu)
+        ] {
+            guard let menu else { continue }
+            let b = WindowMenuButton(title: title, menu: menu.copy() as? NSMenu ?? menu)
+            menuRow.addArrangedSubview(b)
+        }
+        let menuSpacer = NSView()
+        menuSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        menuRow.addArrangedSubview(menuSpacer)
         let top = NSStackView(); top.spacing = 6
         top.addArrangedSubview(iconBarButton("arrow.clockwise", L("Yenile"), #selector(refresh)))
         top.addArrangedSubview(iconBarButton("list.bullet", L("Liste Görünümü"), #selector(showListMode)))
@@ -387,10 +433,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         let jobRow = NSStackView(views: [indicator, NSView(), progress, cancel]); jobRow.spacing = 8
         command.placeholderString = L("Etkin klasörde Terminal komutu çalıştır…"); command.font = .monospacedSystemFont(ofSize: 12, weight: .regular); command.target = self; command.action = #selector(runCommand)
         let commandRow = NSStackView(views: [NSTextField(labelWithString: L("Komut:")), command, button(L("Çalıştır"), #selector(runCommand))]); commandBar = commandRow; commandRow.spacing = 8; command.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let stack = NSStackView(views: [top, split, jobRow, commandRow, bottom]); stack.orientation = .vertical; stack.spacing = 8; stack.translatesAutoresizingMaskIntoConstraints = false
+        let stack = NSStackView(views: [menuRow, top, split, jobRow, commandRow, bottom]); stack.orientation = .vertical; stack.spacing = 8; stack.translatesAutoresizingMaskIntoConstraints = false
         let content = window.contentView!; content.addSubview(stack)
         NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 10), stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -10), stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 10), stack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -10)])
-        for v in [top, split, jobRow, commandRow, bottom] { v.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
+        for v in [menuRow, top, split, jobRow, commandRow, bottom] { v.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
         left.navigate(URL(fileURLWithPath: Prefs.string("leftStart"))); right.navigate(URL(fileURLWithPath: Prefs.string("rightStart")))
         if Prefs.bool("restoreTabs") { left.restore("leftTabs"); right.restore("rightTabs") }
         applySettings()
@@ -411,8 +457,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     }
     func buildMenus() {
         let root = NSMenu(); NSApp.mainMenu = root
-        func submenu(_ title: String, _ items: [(String, Selector?, String)]) {
-            let item = NSMenuItem(); item.title = title; root.addItem(item); let menu = NSMenu(title: title); item.submenu = menu
+        func makeSubmenu(_ title: String, _ items: [(String, Selector?, String)]) -> NSMenu {
+            let menu = NSMenu(title: title)
             for (label, action, key) in items {
                 if label == "-" || action == nil {
                     menu.addItem(NSMenuItem.separator())
@@ -422,15 +468,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
                     menu.addItem(child)
                 }
             }
+            return menu
         }
-        submenu("Total Command", [
+        func attachSubmenu(_ title: String, _ menu: NSMenu) {
+            let item = NSMenuItem(); item.title = title; root.addItem(item); item.submenu = menu
+        }
+
+        let appMenu = makeSubmenu("Total Command", [
             (L("Total Command Hakkında"), #selector(about), ""),
             (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), ""),
             (L("Ayarlar…"), #selector(settings), ","),
             ("-", nil, ""),
             (L("Çık"), #selector(quit), "q")
         ])
-        submenu(L("Dosyalar"), [
+        attachSubmenu("Total Command", appMenu)
+
+        filesMenu = makeSubmenu(L("Dosyalar"), [
             (L("Paketle / Sıkıştır…"), #selector(pack), ""),
             (L("Arşivden Çıkar…"), #selector(unpack), ""),
             (L("Arşivde Gezin…"), #selector(browse), ""),
@@ -448,7 +501,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             (L("Finder’da Göster"), #selector(reveal), ""),
             (L("Çöpe Taşı…"), #selector(trash), "\u{7f}")
         ])
-        submenu(L("Seçim"), [
+        attachSubmenu(L("Dosyalar"), filesMenu!)
+
+        markMenu = makeSubmenu(L("Seçim"), [
             (L("Desene Göre Seç…"), #selector(selectPattern), "+"),
             (L("Tümünü Seç"), #selector(selectAll), "a"),
             (L("Seçimi Temizle"), #selector(clearSelection), "-"),
@@ -460,7 +515,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             ("-", nil, ""),
             (L("Panelleri Karşılaştır"), #selector(compare), "")
         ])
-        submenu(L("Komutlar"), [
+        attachSubmenu(L("Seçim"), markMenu!)
+
+        commandsMenu = makeSubmenu(L("Komutlar"), [
             (L("Dosya Ara…"), #selector(find), "f"),
             (L("Sık Kullanılan Klasörler…"), #selector(bookmarks), "d"),
             (L("Klasörleri Eşitle…"), #selector(sync), ""),
@@ -474,13 +531,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             (L("Panelleri Değiştir"), #selector(swap), "u"),
             (L("Hedefi Kaynağa Eşitle"), #selector(targetEqualsSource), "")
         ])
-        submenu(L("Ağ"), [
+        attachSubmenu(L("Komutlar"), commandsMenu!)
+
+        netMenu = makeSubmenu(L("Ağ"), [
             (L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager), "F"),
             (L("Hızlı Bağlan…"), #selector(showQuickConnect), "N"),
             (L("Bağlantıyı Kes"), #selector(disconnectRemote), ""),
             (L("Sunucuya Bağlan…"), #selector(connectServer), "k")
         ])
-        submenu(L("Görünüm"), [
+        attachSubmenu(L("Ağ"), netMenu!)
+
+        showMenu = makeSubmenu(L("Görünüm"), [
             (L("Liste Görünümü"), #selector(showListMode), "1"),
             (L("Simgeler / Küçük Resimler"), #selector(showGridMode), "2"),
             (L("Önizle"), #selector(preview), "y"),
@@ -497,19 +558,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             (L("Yenile"), #selector(refresh), "r"),
             (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden), ".")
         ])
-        submenu(L("Yapılandırma"), [
+        attachSubmenu(L("Görünüm"), showMenu!)
+
+        configMenu = makeSubmenu(L("Yapılandırma"), [
             (L("Ayarlar…"), #selector(settings), ","),
             (L("Pencere Konumunu Kaydet"), #selector(saveWindowPosition), ""),
             (L("Ayarları Kaydet"), #selector(saveSettingsAction), "")
         ])
-        submenu(L("Başlat"), [
+        attachSubmenu(L("Yapılandırma"), configMenu!)
+
+        startMenu = makeSubmenu(L("Başlat"), [
             (L("Bu Klasörü Sık Kullanılanlara Ekle"), #selector(addBookmark), "D"),
             (L("Sık Kullanılan Klasörler…"), #selector(bookmarks), "b")
         ])
-        submenu(L("Yardım"), [
+        attachSubmenu(L("Başlat"), startMenu!)
+
+        helpMenu = makeSubmenu(L("Yardım"), [
             (L("Total Command Hakkında"), #selector(about), ""),
             (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), "")
         ])
+        attachSubmenu(L("Yardım"), helpMenu!)
+
         let editItem = NSMenuItem(); root.addItem(editItem); let edit = NSMenu(title: L("Düzen")); editItem.submenu = edit
         for (title, action, key) in [(L("Kes"), #selector(cutClipboard), "x"), (L("Kopyala"), #selector(copyClipboard), "c"), (L("Yapıştır"), #selector(pasteClipboard), "v")] { let item = edit.addItem(withTitle: title, action: action, keyEquivalent: key); item.target = self }
     }
