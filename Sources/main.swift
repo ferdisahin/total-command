@@ -278,10 +278,12 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
             history = []; future = []; archiveRoot = nil; search.stringValue = ""
             updateTabs()
             reload()
+            activated?()
             return
         }
         if record, location != url { history.append(location); future = [] }
         location = url; paths[tabIndex] = url; search.stringValue = ""; table.deselectAll(nil); grid.deselectAll(nil); updateTabs(); reload()
+        activated?()
     }
     @objc func goBack() { guard let u = history.popLast() else { return }; future.append(location); navigate(u, record: false) }
     @objc func goForward() { guard let u = future.popLast() else { return }; history.append(location); navigate(u, record: false) }
@@ -425,13 +427,16 @@ final class WindowMenuButton: NSButton {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPreviewPanelDataSource {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPreviewPanelDataSource, NSTextFieldDelegate {
     var window: NSWindow!
     let left = FilePane(), right = FilePane()
     var activeLeft = true
     var active: FilePane { activeLeft ? left : right }; var other: FilePane { activeLeft ? right : left }
-    let indicator = NSTextField(labelWithString: L("Sol panel etkin")), progress = NSProgressIndicator(), cancel = NSButton(title: L("İptal"), target: nil, action: nil)
+    let promptLabel = NSTextField(labelWithString: "")
     let command = NSTextField()
+    let historyButton = NSButton()
+    let indicator = NSTextField(labelWithString: "")
+    let progress = NSProgressIndicator(), cancel = NSButton(title: L("İptal"), target: nil, action: nil)
     var commandBar: NSView?
     var logWindows: [NSWindow] = []
     var settingsController: SettingsController?
@@ -530,14 +535,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         for (i, pair) in [(L("F3 Önizle"), #selector(preview)), (L("F4 Düzenle"), #selector(editFile)), (L("F5 Kopyala"), #selector(copyFiles)), (L("F6 Taşı"), #selector(moveFiles)), (L("F7 Klasör"), #selector(newFolder)), (L("F8 Çöpe Taşı"), #selector(trash))].enumerated() { let b = button(pair.0, pair.1); actionButtons[i + 3] = b; bottom.addArrangedSubview(b) }
         progress.isIndeterminate = false; progress.minValue = 0; progress.maxValue = 1; progress.style = .bar; progress.widthAnchor.constraint(equalToConstant: 180).isActive = true; progress.isHidden = true
         cancel.target = self; cancel.action = #selector(cancelJob); cancel.isHidden = true
-        indicator.font = .systemFont(ofSize: 11, weight: .medium)
-        let jobRow = NSStackView(views: [indicator, NSView(), progress, cancel]); jobRow.spacing = 8
-        command.placeholderString = L("Etkin klasörde Terminal komutu çalıştır…"); command.font = .monospacedSystemFont(ofSize: 12, weight: .regular); command.target = self; command.action = #selector(runCommand)
-        let commandRow = NSStackView(views: [NSTextField(labelWithString: L("Komut:")), command, button(L("Çalıştır"), #selector(runCommand))]); commandBar = commandRow; commandRow.spacing = 8; command.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let stack = NSStackView(views: [menuRow, top, split, jobRow, commandRow, bottom]); stack.orientation = .vertical; stack.spacing = 8; stack.translatesAutoresizingMaskIntoConstraints = false
+        promptLabel.font = .monospacedSystemFont(ofSize: 12, weight: .bold)
+        promptLabel.lineBreakMode = .byTruncatingHead
+        promptLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        promptLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        command.placeholderString = ""
+        command.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        command.target = self; command.action = #selector(runCommandOrNavigate)
+        command.delegate = self
+        command.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        historyButton.image = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: L("Hızlı Klasör / Geçmiş"))
+        historyButton.bezelStyle = .texturedRounded
+        historyButton.toolTip = L("Klasörlere Hızlı Git ve Komut Geçmişi")
+        historyButton.target = self; historyButton.action = #selector(showFolderAndHistoryMenu(_:))
+        historyButton.widthAnchor.constraint(equalToConstant: 26).isActive = true
+        let commandRow = NSStackView(views: [promptLabel, command, historyButton, progress, cancel])
+        commandBar = commandRow; commandRow.spacing = 4; commandRow.alignment = .centerY
+        let stack = NSStackView(views: [menuRow, top, split, commandRow, bottom]); stack.orientation = .vertical; stack.spacing = 6; stack.translatesAutoresizingMaskIntoConstraints = false
         let content = window.contentView!; content.addSubview(stack)
-        NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 10), stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -10), stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 10), stack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -10)])
-        for v in [menuRow, top, split, jobRow, commandRow, bottom] { v.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
+        NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 8), stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -8), stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 8), stack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -8)])
+        for v in [menuRow, top, split, commandRow, bottom] { v.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
         left.navigate(URL(fileURLWithPath: Prefs.string("leftStart"))); right.navigate(URL(fileURLWithPath: Prefs.string("rightStart")))
         if Prefs.bool("restoreTabs") { left.restore("leftTabs"); right.restore("rightTabs") }
         applySettings()
@@ -759,7 +776,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     }
     var actionButtons: [Int: NSButton] = [:]
     @objc func functionButton(_ sender: NSButton) { dispatchAction(Prefs.string("keyF\(sender.tag)")) }
-    func activate(_ value: Bool) { activeLeft = value; if !operations.busy { indicator.stringValue = value ? L("Sol panel etkin → Hedef: sağ panel") : L("Sağ panel etkin → Hedef: sol panel") } }
+    func updatePrompt() {
+        let p = active.remoteSession?.displayURLString ?? active.location.path
+        promptLabel.stringValue = p + ">"
+    }
+    func activate(_ value: Bool) {
+        activeLeft = value
+        updatePrompt()
+    }
     func show(_ error: Error) { NSAlert(error: error).runModal() }
     func perform(_ action: () throws -> Void) { guard !operations.busy else { show(PanelError(message: L("Önce işlem kuyruğunu tamamlayın veya bekleyen işleri iptal edin."))); return }; do { try action(); refresh() } catch { show(error); refresh() } }
     func ask(_ title: String, initial: String, detail: String = "") -> String? {
@@ -1212,13 +1236,178 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         guard let text = ask(L("Ağ sunucusuna bağlan"), initial: "smb://", detail: L("SMB veya AFP adresi girin. Bağlantı Finder’da açılır. Bağlandıktan sonra Yenile’ye basarak diski panel listesinden seçebilirsiniz.")), let url = URL(string: text), ["smb", "afp"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else { return }
         NSWorkspace.shared.open(url)
     }
+    var commandHistory: [String] {
+        get { UserDefaults.standard.stringArray(forKey: "commandHistory") ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: "commandHistory") }
+    }
+    func addHistory(_ text: String) {
+        var hist = commandHistory
+        hist.removeAll { $0 == text }
+        hist.insert(text, at: 0)
+        if hist.count > 30 { hist = Array(hist.prefix(30)) }
+        commandHistory = hist
+    }
+    @objc func clearCommandHistory() {
+        commandHistory = []
+    }
+    @objc func showFolderAndHistoryMenu(_ sender: NSButton) {
+        let menu = NSMenu()
+        let subfolders = active.entries.filter { !$0.isParent && $0.directory }
+        let header = NSMenuItem(title: L("Klasörler ({0}) — Hızlı Git", subfolders.count), action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
+        if subfolders.isEmpty {
+            let emptyItem = NSMenuItem(title: L("(Bu klasörde alt klasör yok)"), action: nil, keyEquivalent: "")
+            emptyItem.isEnabled = false
+            menu.addItem(emptyItem)
+        } else {
+            for entry in subfolders {
+                let name = entry.url.lastPathComponent
+                let item = NSMenuItem(title: name, action: #selector(quickJumpToFolder(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = entry.url
+                let icon = NSWorkspace.shared.icon(forFile: entry.url.path)
+                icon.size = NSSize(width: 16, height: 16)
+                item.image = icon
+                menu.addItem(item)
+            }
+        }
+        menu.addItem(.separator())
+        let histHeader = NSMenuItem(title: L("Geçmiş Komutlar ve Konumlar"), action: nil, keyEquivalent: "")
+        histHeader.isEnabled = false
+        menu.addItem(histHeader)
+        let hist = commandHistory
+        if hist.isEmpty {
+            let emptyHist = NSMenuItem(title: L("(Geçmiş boş)"), action: nil, keyEquivalent: "")
+            emptyHist.isEnabled = false
+            menu.addItem(emptyHist)
+        } else {
+            for itemText in hist {
+                let item = NSMenuItem(title: itemText, action: #selector(historyItemClicked(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = itemText
+                menu.addItem(item)
+            }
+            menu.addItem(.separator())
+            let clearItem = NSMenuItem(title: L("Geçmişi Temizle"), action: #selector(clearCommandHistory), keyEquivalent: "")
+            clearItem.target = self
+            menu.addItem(clearItem)
+        }
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height + 2), in: sender)
+    }
+    @objc func quickJumpToFolder(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        active.navigate(url)
+        addHistory(url.lastPathComponent)
+        command.stringValue = ""
+        window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+    }
+    @objc func historyItemClicked(_ sender: NSMenuItem) {
+        guard let itemText = sender.representedObject as? String else { return }
+        command.stringValue = itemText
+        runCommandOrNavigate()
+    }
     @objc func runCommand() {
-        let text = command.stringValue.trimmingCharacters(in: .whitespacesAndNewlines); guard !text.isEmpty else { return }; let directory = active.location; var output = ""
-        startJob(L("Komut çalışıyor"), work: { state, progress in output = try self.execute("/bin/zsh", ["-c", text], directory: directory, state: state); progress(1, 1, L("Bitti")) }, complete: {
-            let log = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false); log.title = L("Komut çıktısı — ") + directory.lastPathComponent; log.isReleasedWhenClosed = false
-            let view = NSTextView(); view.isEditable = false; view.font = .monospacedSystemFont(ofSize: 12, weight: .regular); view.string = "$ " + text + "\n\n" + (output.isEmpty ? L("Komut çıktı vermeden tamamlandı.") : output); view.textContainerInset = NSSize(width: 12, height: 12)
-            let scroll = NSScrollView(frame: log.contentView!.bounds); scroll.autoresizingMask = [.width, .height]; scroll.documentView = view; scroll.hasVerticalScroller = true; view.isVerticallyResizable = true; view.isHorizontallyResizable = false; view.autoresizingMask = [.width]; view.textContainer?.widthTracksTextView = true; log.contentView?.addSubview(scroll); self.logWindows.removeAll { !$0.isVisible }; self.logWindows.append(log); log.center(); log.makeKeyAndOrderFront(nil)
+        runCommandOrNavigate()
+    }
+    @objc func runCommandOrNavigate() {
+        let text = command.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        addHistory(text)
+        var target = text
+        if target.hasPrefix("cd ") {
+            target = String(target.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if target == ".." {
+            active.goUp()
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return
+        }
+        if target == "/" {
+            active.navigate(URL(fileURLWithPath: "/"))
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return
+        }
+        if target == "~" {
+            active.navigate(FileManager.default.homeDirectoryForCurrentUser)
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return
+        }
+        let localCandidate = active.location.appendingPathComponent(target)
+        var isDir: ObjCBool = false
+        if FileManager.default.fileExists(atPath: localCandidate.path, isDirectory: &isDir), isDir.boolValue {
+            active.navigate(localCandidate)
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return
+        }
+        if let match = active.entries.first(where: { !$0.isParent && $0.directory && $0.url.lastPathComponent.localizedCaseInsensitiveCompare(target) == .orderedSame }) {
+            active.navigate(match.url)
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return
+        }
+        let expanded = NSString(string: target).expandingTildeInPath
+        if FileManager.default.fileExists(atPath: expanded, isDirectory: &isDir), isDir.boolValue {
+            active.navigate(URL(fileURLWithPath: expanded))
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return
+        }
+        if let remote = active.remoteSession {
+            if let entry = active.entries.first(where: { !$0.isParent && $0.directory && $0.url.lastPathComponent.localizedCaseInsensitiveCompare(target) == .orderedSame }) {
+                let cur = remote.currentPath
+                let next = cur.hasSuffix("/") ? "\(cur)\(entry.url.lastPathComponent)" : "\(cur)/\(entry.url.lastPathComponent)"
+                remote.currentPath = next
+                active.reload()
+                command.stringValue = ""
+                window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+                return
+            }
+        }
+        runShellCommand(text)
+    }
+    func runShellCommand(_ text: String) {
+        let directory = active.location; var output = ""
+        startJob(L("Komut çalışıyor"), work: { state, progress in
+            output = try self.execute("/bin/zsh", ["-c", text], directory: directory, state: state)
+            progress(1, 1, L("Bitti"))
+        }, complete: { [weak self] in
+            guard let self else { return }
+            self.command.stringValue = ""
+            let log = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+            log.title = L("Komut çıktısı — ") + directory.lastPathComponent
+            log.isReleasedWhenClosed = false
+            let view = NSTextView()
+            view.isEditable = false
+            view.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+            view.string = "$ " + text + "\n\n" + (output.isEmpty ? L("Komut çıktı vermeden tamamlandı.") : output)
+            view.textContainerInset = NSSize(width: 12, height: 12)
+            let scroll = NSScrollView(frame: log.contentView!.bounds)
+            scroll.autoresizingMask = [.width, .height]
+            scroll.documentView = view
+            scroll.hasVerticalScroller = true
+            view.isVerticallyResizable = true
+            view.isHorizontallyResizable = false
+            view.autoresizingMask = [.width]
+            view.textContainer?.widthTracksTextView = true
+            log.contentView?.addSubview(scroll)
+            self.logWindows.removeAll { !$0.isVisible }
+            self.logWindows.append(log)
+            log.center()
+            log.makeKeyAndOrderFront(nil)
         })
+    }
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if control === command && commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            command.stringValue = ""
+            window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+            return true
+        }
+        return false
     }
     @objc func addBookmark() { var paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; if !paths.contains(active.location.path) { paths.append(active.location.path); UserDefaults.standard.set(paths, forKey: "bookmarks") }; indicator.stringValue = L("Favorilere eklendi: ") + active.location.lastPathComponent }
     @objc func bookmarks() { let paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; guard !paths.isEmpty else { show(PanelError(message: L("Henüz favori yok. Command+D ile klasör ekleyin."))); return }; let a = NSAlert(); a.messageText = L("Favori klasörler"); let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 550, height: 28)); popup.addItems(withTitles: paths); a.accessoryView = popup; a.addButton(withTitle: L("Git")); a.addButton(withTitle: L("Vazgeç")); if a.runModal() == .alertFirstButtonReturn { active.navigate(URL(fileURLWithPath: paths[popup.indexOfSelectedItem])) } }

@@ -484,3 +484,11 @@
 "0 B / {0} · 0/{1} dosya, 0/{2} klasör · Boş: {3}" = "0 B / {0} · 0/{1} files, 0/{2} dirs · Free: {3}";
 "{0} / {1} · {2}/{3} dosya, {4}/{5} klasör seçili · Boş: {6}" = "{0} / {1} · {2}/{3} files, {4}/{5} dirs selected · Free: {6}";
 "Kullanılan Alanı Hesapla" = "Calculate Occupied Space";
+
+"Hızlı Klasör / Geçmiş" = "Quick Folder / History";
+"Klasörlere Hızlı Git ve Komut Geçmişi" = "Quick Jump to Folders & Command History";
+"Klasörler ({0}) — Hızlı Git" = "Folders ({0}) — Quick Jump";
+"(Bu klasörde alt klasör yok)" = "(No subfolders in this folder)";
+"Geçmiş Komutlar ve Konumlar" = "Recent Commands and Paths";
+"(Geçmiş boş)" = "(History is empty)";
+"Geçmişi Temizle" = "Clear History";
