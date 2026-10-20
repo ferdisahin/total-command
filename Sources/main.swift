@@ -5,14 +5,6 @@ import Cocoa
 import QuickLookUI
 import QuickLookThumbnailing
 
-struct Entry {
-    let url: URL
-    let directory: Bool
-    let size: Int64
-    let date: Date
-    var isParent = false
-    var ext: String { directory ? "" : url.pathExtension }
-}
 final class IconItem: NSCollectionViewItem {
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 112, height: 104))
@@ -57,30 +49,31 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     var archiveRoot: URL?
     var archiveSource: URL?
     var updating = false
+    var remoteSession: RemoteSession?
     let path = NSTextField(), search = NSSearchField(), tabs = NSSegmentedControl(), table = DropTable(), grid = DropGrid()
     let listScroll = NSScrollView(), gridScroll = NSScrollView(), body = NSView()
-    let status = NSTextField(labelWithString: ""), disk = NSPopUpButton(), mode = NSSegmentedControl(labels: ["Liste", "Simgeler"], trackingMode: .selectOne, target: nil, action: nil)
+    let status = NSTextField(labelWithString: ""), disk = NSPopUpButton(), mode = NSSegmentedControl(labels: [L("Liste"), L("Simgeler")], trackingMode: .selectOne, target: nil, action: nil)
     var gridMode: Bool { mode.selectedSegment == 1 }
     var selected: [URL] { gridMode ? grid.selectionIndexPaths.sorted { $0.item < $1.item }.compactMap { entries.indices.contains($0.item) && !entries[$0.item].isParent ? entries[$0.item].url : nil } : table.selectedRowIndexes.compactMap { entries.indices.contains($0) && !entries[$0].isParent ? entries[$0].url : nil } }
     init() {
         super.init(frame: .zero)
-        let back = iconButton("chevron.left", "Geri", #selector(goBack)), forward = iconButton("chevron.right", "İleri", #selector(goForward)), up = iconButton("arrow.up", "Üst klasör", #selector(goUp))
+        let back = iconButton("chevron.left", L("Geri"), #selector(goBack)), forward = iconButton("chevron.right", L("İleri"), #selector(goForward)), up = iconButton("arrow.up", L("Üst klasör"), #selector(goUp))
         path.font = .systemFont(ofSize: 12); path.target = self; path.action = #selector(enterPath); path.delegate = self
-        search.placeholderString = "Adına göre filtrele"; search.delegate = self
+        search.placeholderString = L("Adına göre filtrele"); search.delegate = self
         tabs.target = self; tabs.action = #selector(changeTab); tabs.segmentStyle = .texturedRounded
-        let add = iconButton("plus", "Yeni sekme", #selector(newTab)), close = iconButton("xmark", "Sekmeyi kapat", #selector(closeTab))
+        let add = iconButton("plus", L("Yeni sekme"), #selector(newTab)), close = iconButton("xmark", L("Sekmeyi kapat"), #selector(closeTab))
         let tabRow = NSStackView(views: [tabs, add, close]); tabRow.spacing = 5
         tabs.setContentHuggingPriority(.defaultLow, for: .horizontal)
         let nav = NSStackView(views: [back, forward, up, path]); nav.spacing = 5
         path.setContentHuggingPriority(.defaultLow, for: .horizontal)
         disk.target = self; disk.action = #selector(pickDisk)
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let places = [("Başlangıç", home), ("Masaüstü", home.appendingPathComponent("Desktop")), ("Belgeler", home.appendingPathComponent("Documents")), ("İndirilenler", home.appendingPathComponent("Downloads"))] + (FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: nil, options: [.skipHiddenVolumes]) ?? []).map { ($0.lastPathComponent.isEmpty ? "Macintosh HD" : $0.lastPathComponent, $0) }
+        let places = [(L("Başlangıç"), home), (L("Masaüstü"), home.appendingPathComponent("Desktop")), (L("Belgeler"), home.appendingPathComponent("Documents")), (L("İndirilenler"), home.appendingPathComponent("Downloads"))] + (FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: nil, options: [.skipHiddenVolumes]) ?? []).map { ($0.lastPathComponent.isEmpty ? "Macintosh HD" : $0.lastPathComponent, $0) }
         for (label, url) in places { disk.addItem(withTitle: label); disk.lastItem?.representedObject = url }
         disk.widthAnchor.constraint(equalToConstant: 155).isActive = true
         mode.selectedSegment = 0; mode.target = self; mode.action = #selector(switchViewMode)
         let tools = NSStackView(views: [disk, search, mode]); tools.spacing = 7; search.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        for (id, title, width) in [("name", "Ad", 245.0), ("ext", "Uzantı", 55.0), ("size", "Boyut", 78.0), ("date", "Değiştirilme", 125.0)] {
+        for (id, title, width) in [("name", L("Ad"), 245.0), ("ext", L("Uzantı"), 55.0), ("size", L("Boyut"), 78.0), ("date", L("Değiştirilme"), 125.0)] {
             let c = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(id)); c.title = title; c.width = width; c.minWidth = id == "name" ? 100 : 45
             c.sortDescriptorPrototype = NSSortDescriptor(key: id, ascending: true); table.addTableColumn(c)
         }
@@ -121,9 +114,41 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     @objc func pickDisk() { guard let u = disk.selectedItem?.representedObject as? URL else { return }; navigate(u); activated?() }
     func controlTextDidBeginEditing(_ obj: Notification) { activated?() }
     func controlTextDidChange(_ obj: Notification) { if obj.object as? NSSearchField === search { reload() } }
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            search.stringValue = ""
+            reload()
+            window?.makeFirstResponder(gridMode ? grid : table)
+            return true
+        }
+        return false
+    }
     func reload() {
         let selection = selected
         updating = true; defer { updating = false }
+        if let remote = remoteSession {
+            path.stringValue = remote.displayURLString
+            remote.listDirectory(path: remote.currentPath) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let items):
+                    var list = items.map { $0.toAppEntry(baseURL: remote.virtualURL) }
+                    if remote.currentPath != "/" && !remote.currentPath.isEmpty {
+                        let parentURL = remote.virtualURL.deletingLastPathComponent()
+                        list.append(Entry(url: parentURL, directory: true, size: 0, date: .distantPast, isParent: true))
+                    }
+                    self.entries = list
+                    self.sort()
+                    self.table.reloadData()
+                    self.grid.reloadData()
+                    self.select(selection)
+                    self.updateStatus()
+                case .failure(let err):
+                    self.report?(err)
+                }
+            }
+            return
+        }
         do {
             let urls = try FileManager.default.contentsOfDirectory(at: location, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey], options: showHidden ? [] : [.skipsHiddenFiles])
             entries = try urls.filter { search.stringValue.isEmpty || $0.lastPathComponent.localizedCaseInsensitiveContains(search.stringValue) }.map {
@@ -149,7 +174,7 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
         }
     }
     func navigate(_ url: URL, record: Bool = true) {
-        guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { report?(PanelError(message: "Klasör bulunamadı: \(url.path)")); path.stringValue = location.path; return }
+        guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { report?(PanelError(message: L("Klasör bulunamadı: {0}", url.path))); path.stringValue = location.path; return }
         if record, location != url { history.append(location); future = [] }
         location = url; paths[tabIndex] = url; search.stringValue = ""; table.deselectAll(nil); grid.deselectAll(nil); updateTabs(); reload()
     }
@@ -157,12 +182,40 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     @objc func goForward() { guard let u = future.popLast() else { return }; history.append(location); navigate(u, record: false) }
     @objc func clicked() { activated?() }
     @objc func enterPath() { navigate(URL(fileURLWithPath: NSString(string: path.stringValue).expandingTildeInPath)) }
-    @objc func goUp() { if let root = archiveRoot, location == root, let source = archiveSource { archiveRoot = nil; archiveSource = nil; navigate(source.deletingLastPathComponent()); select([source]) } else { navigate(location.deletingLastPathComponent()) } }
+    @objc func goUp() {
+        if let remote = remoteSession {
+            let cur = remote.currentPath
+            if cur != "/" && !cur.isEmpty {
+                let parent = (cur as NSString).deletingLastPathComponent
+                remote.currentPath = parent.isEmpty ? "/" : parent
+                reload()
+            }
+            return
+        }
+        if let root = archiveRoot, location == root, let source = archiveSource { archiveRoot = nil; archiveSource = nil; navigate(source.deletingLastPathComponent()); select([source]) } else { navigate(location.deletingLastPathComponent()) }
+    }
     @objc func openSelected() {
         activated?()
         let rawSelection = gridMode ? grid.selectionIndexPaths.map(\.item).sorted() : Array(table.selectedRowIndexes)
         if let first = rawSelection.first, entries.indices.contains(first), entries[first].isParent, selected.isEmpty { goUp(); return }
         guard let url = selected.first else { return }
+        if let remote = remoteSession {
+            if let entry = entries.first(where: { $0.url == url }) {
+                if entry.directory {
+                    let cur = remote.currentPath
+                    let next = cur.hasSuffix("/") ? "\(cur)\(entry.url.lastPathComponent)" : "\(cur)/\(entry.url.lastPathComponent)"
+                    remote.currentPath = next
+                    reload()
+                } else {
+                    let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(entry.url.lastPathComponent)
+                    let state = JobState()
+                    let rPath = remote.currentPath.hasSuffix("/") ? "\(remote.currentPath)\(entry.url.lastPathComponent)" : "\(remote.currentPath)/\(entry.url.lastPathComponent)"
+                    try? remote.download(remotePath: rPath, to: tmp, control: state, progress: { _, _, _ in })
+                    NSWorkspace.shared.open(tmp)
+                }
+            }
+            return
+        }
         if (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true { navigate(url) }
         else if Prefs.bool("browseArchives"), ["zip", "7z", "rar", "tar", "gz", "bz2", "xz", "tgz"].contains(url.pathExtension.lowercased()) { archiveOpened?(url) }
         else { NSWorkspace.shared.open(url) }
@@ -179,15 +232,15 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? { entries[row].isParent ? nil : entries[row].url as NSURL }
     func updateStatus() {
         let urls = Set(selected); let bytes = entries.filter { urls.contains($0.url) }.reduce(Int64(0)) { $0 + ($1.directory ? 0 : $1.size) }
-        let free = (try? location.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity).map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "—"
-        status.stringValue = "\(entries.filter { !$0.isParent }.count) öğe · \(urls.count) seçili (\(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))) · Boş: \(free)"
+        let free = remoteSession != nil ? "— (Uzak)" : (try? location.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity).map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) } ?? "—"
+        status.stringValue = L("{0} öğe · {1} seçili ({2}) · Boş: {3}", entries.filter { !$0.isParent }.count, urls.count, ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file), free)
     }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let e = entries[row]; let key = tableColumn?.identifier.rawValue
         if key == "name" {
-            let icon = NSImageView(); icon.image = e.isParent ? NSImage(systemSymbolName: "arrow.up", accessibilityDescription: "Üst klasör") : NSWorkspace.shared.icon(forFile: e.url.path); icon.widthAnchor.constraint(equalToConstant: 16).isActive = true; icon.heightAnchor.constraint(equalToConstant: 16).isActive = true
+            let icon = NSImageView(); icon.image = e.isParent ? NSImage(systemSymbolName: "arrow.up", accessibilityDescription: L("Üst klasör")) : NSWorkspace.shared.icon(forFile: e.url.path); icon.widthAnchor.constraint(equalToConstant: 16).isActive = true; icon.heightAnchor.constraint(equalToConstant: 16).isActive = true
             let label = NSTextField(labelWithString: e.isParent ? "[..]" : e.url.lastPathComponent); label.font = .systemFont(ofSize: CGFloat(Prefs.int("fontSize"))); label.lineBreakMode = .byTruncatingMiddle
-            let stack = NSStackView(views: [icon, label]); stack.spacing = 6; stack.toolTip = e.isParent ? "Üst klasöre çık" : e.url.path; return stack
+            let stack = NSStackView(views: [icon, label]); stack.spacing = 6; stack.toolTip = e.isParent ? L("Üst klasöre çık") : e.url.path; return stack
         }
         if e.isParent { return NSTextField(labelWithString: "") }
         let text = key == "ext" ? e.ext : key == "size" ? (e.directory ? "<DIR>" : ByteCountFormatter.string(fromByteCount: e.size, countStyle: .file)) : DateFormatter.localizedString(from: e.date, dateStyle: Prefs.string("dateStyle") == "long" ? .long : .short, timeStyle: .short)
@@ -197,14 +250,14 @@ final class FilePane: NSView, NSTableViewDataSource, NSTableViewDelegate, NSColl
     func collectionView(_ collectionView: NSCollectionView, itemForRepresentedObjectAt indexPath: IndexPath) -> NSCollectionViewItem {
         let item = collectionView.makeItem(withIdentifier: NSUserInterfaceItemIdentifier("icon"), for: indexPath); let e = entries[indexPath.item]
         item.representedObject = e.url
-        item.imageView?.image = e.isParent ? NSImage(systemSymbolName: "arrow.up", accessibilityDescription: "Üst klasör") : NSWorkspace.shared.icon(forFile: e.url.path)
+        item.imageView?.image = e.isParent ? NSImage(systemSymbolName: "arrow.up", accessibilityDescription: L("Üst klasör")) : NSWorkspace.shared.icon(forFile: e.url.path)
         if Prefs.bool("thumbnails"), !e.directory, ["png", "jpg", "jpeg", "heic", "gif", "webp", "pdf", "mov", "mp4"].contains(e.ext.lowercased()) {
             let request = QLThumbnailGenerator.Request(fileAt: e.url, size: NSSize(width: 64, height: 60), scale: 2, representationTypes: .thumbnail)
             QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { [weak item] representation, _ in
                 DispatchQueue.main.async { if let item, item.representedObject as? URL == e.url, let representation { item.imageView?.image = representation.nsImage } }
             }
         }
-        item.textField?.stringValue = e.isParent ? "[..]" : e.url.lastPathComponent; item.view.toolTip = e.isParent ? "Üst klasöre çık" : e.url.path; return item
+        item.textField?.stringValue = e.isParent ? "[..]" : e.url.lastPathComponent; item.view.toolTip = e.isParent ? L("Üst klasöre çık") : e.url.path; return item
     }
     func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) { if !updating { activated?(); updateStatus() } }
     func collectionView(_ collectionView: NSCollectionView, didDeselectItemsAt indexPaths: Set<IndexPath>) { updateStatus() }
@@ -216,7 +269,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     let left = FilePane(), right = FilePane()
     var activeLeft = true
     var active: FilePane { activeLeft ? left : right }; var other: FilePane { activeLeft ? right : left }
-    let indicator = NSTextField(labelWithString: "Sol panel etkin"), progress = NSProgressIndicator(), cancel = NSButton(title: "İptal", target: nil, action: nil)
+    let indicator = NSTextField(labelWithString: L("Sol panel etkin")), progress = NSProgressIndicator(), cancel = NSButton(title: L("İptal"), target: nil, action: nil)
     let command = NSTextField()
     var commandBar: NSView?
     var logWindows: [NSWindow] = []
@@ -228,7 +281,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     var pendingUpdateIsManual = false
     let operations = FileJobQueue()
     var queueController: QueueWindowController?
-    let queueButton = NSButton(title: "İşlem Kuyruğu", target: nil, action: nil)
+    let queueButton = NSButton(title: L("İşlem Kuyruğu"), target: nil, action: nil)
+    var siteManagerController: SiteManagerController?
+    var quickConnectController: QuickConnectController?
+    var diffController: DiffWindowController?
+    var multiRenameController: MultiRenameWindowController?
     var job: JobState? { operations.current?.control }
     var process: Process?; var previewURLs: [URL] = []; var temporary: [URL] = []
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -240,7 +297,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             if let error, job.reportFailure, !job.control.cancelled { self.show(error) }
         }
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 800), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Total Command — Dosya Yöneticisi"; window.minSize = NSSize(width: 1080, height: 560); window.center(); window.delegate = self
+        window.title = L("Total Command — Dosya Yöneticisi"); window.minSize = NSSize(width: 1080, height: 560); window.center(); window.delegate = self
         let split = NSSplitView(); split.isVertical = true; split.dividerStyle = .thin; split.addArrangedSubview(left); split.addArrangedSubview(right)
         let equal = left.widthAnchor.constraint(equalTo: right.widthAnchor); equal.priority = .defaultHigh; equal.isActive = true
         left.widthAnchor.constraint(greaterThanOrEqualToConstant: 400).isActive = true; right.widthAnchor.constraint(greaterThanOrEqualToConstant: 400).isActive = true
@@ -250,21 +307,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         let drop: ([URL], URL) -> Void = { [weak self] urls, dest in self?.transfer(urls, to: dest, move: false) }; left.dropped = drop; right.dropped = drop
         for pane in [left, right] {
             let context = NSMenu()
-            for (title, action) in [("Aç", #selector(openItem)), ("Önizle", #selector(preview)), ("Karşı panele kopyala", #selector(copyFiles)), ("Karşı panele taşı", #selector(moveFiles)), ("Yeniden adlandır…", #selector(rename)), ("Yolu kopyala", #selector(copyPath)), ("Finder’da göster", #selector(reveal)), ("Çöpe taşı…", #selector(trash))] { let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; context.addItem(item) }
+            for (title, action) in [(L("Aç"), #selector(openItem)), (L("Önizle"), #selector(preview)), (L("Karşı panele kopyala"), #selector(copyFiles)), (L("Karşı panele taşı"), #selector(moveFiles)), (L("Yeniden adlandır…"), #selector(rename)), (L("Yolu kopyala"), #selector(copyPath)), (L("Finder’da göster"), #selector(reveal)), (L("Çöpe taşı…"), #selector(trash))] { let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; context.addItem(item) }
             pane.table.menu = context; pane.grid.menu = context.copy() as? NSMenu
         }
         let top = NSStackView(); top.spacing = 8
-        for (title, action) in [("Ayarlar", #selector(settings)), ("Klasör Aç", #selector(chooseFolder)), ("Yenile", #selector(refresh)), ("Gizli Dosyalar", #selector(hidden)), ("Karşılaştır", #selector(compare)), ("Dosya Ara", #selector(find)), ("Toplu Adlandır", #selector(batchRename)), ("Sıkıştır", #selector(pack)), ("Çıkar", #selector(unpack))] { top.addArrangedSubview(button(title, action)) }
+        for (title, action) in [(L("Ayarlar"), #selector(settings)), (L("Klasör Aç"), #selector(chooseFolder)), (L("Yenile"), #selector(refresh)), (L("Gizli Dosyalar"), #selector(hidden)), (L("Karşılaştır"), #selector(compare)), (L("Dosya Ara"), #selector(find)), (L("Toplu Adlandır"), #selector(batchRename)), (L("Sıkıştır"), #selector(pack)), (L("Çıkar"), #selector(unpack))] { top.addArrangedSubview(button(title, action)) }
+        top.addArrangedSubview(button(L("FTP"), #selector(showSiteManager)))
+        top.addArrangedSubview(button(L("İçerik Karşılaştır"), #selector(compareContent)))
         queueButton.target = self; queueButton.action = #selector(showQueue); top.addArrangedSubview(queueButton)
         top.addArrangedSubview(NSView())
         let bottom = NSStackView(); bottom.distribution = .fillEqually; bottom.spacing = 4
-        for (i, pair) in [("F3 Önizle", #selector(preview)), ("F4 Düzenle", #selector(editFile)), ("F5 Kopyala", #selector(copyFiles)), ("F6 Taşı", #selector(moveFiles)), ("F7 Klasör", #selector(newFolder)), ("F8 Çöpe Taşı", #selector(trash))].enumerated() { let b = button(pair.0, pair.1); actionButtons[i + 3] = b; bottom.addArrangedSubview(b) }
+        for (i, pair) in [(L("F3 Önizle"), #selector(preview)), (L("F4 Düzenle"), #selector(editFile)), (L("F5 Kopyala"), #selector(copyFiles)), (L("F6 Taşı"), #selector(moveFiles)), (L("F7 Klasör"), #selector(newFolder)), (L("F8 Çöpe Taşı"), #selector(trash))].enumerated() { let b = button(pair.0, pair.1); actionButtons[i + 3] = b; bottom.addArrangedSubview(b) }
         progress.isIndeterminate = false; progress.minValue = 0; progress.maxValue = 1; progress.style = .bar; progress.widthAnchor.constraint(equalToConstant: 180).isActive = true; progress.isHidden = true
         cancel.target = self; cancel.action = #selector(cancelJob); cancel.isHidden = true
         indicator.font = .systemFont(ofSize: 11, weight: .medium)
         let jobRow = NSStackView(views: [indicator, NSView(), progress, cancel]); jobRow.spacing = 8
-        command.placeholderString = "Etkin klasörde Terminal komutu çalıştır…"; command.font = .monospacedSystemFont(ofSize: 12, weight: .regular); command.target = self; command.action = #selector(runCommand)
-        let commandRow = NSStackView(views: [NSTextField(labelWithString: "Komut:"), command, button("Çalıştır", #selector(runCommand))]); commandBar = commandRow; commandRow.spacing = 8; command.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        command.placeholderString = L("Etkin klasörde Terminal komutu çalıştır…"); command.font = .monospacedSystemFont(ofSize: 12, weight: .regular); command.target = self; command.action = #selector(runCommand)
+        let commandRow = NSStackView(views: [NSTextField(labelWithString: L("Komut:")), command, button(L("Çalıştır"), #selector(runCommand))]); commandBar = commandRow; commandRow.spacing = 8; command.setContentHuggingPriority(.defaultLow, for: .horizontal)
         let stack = NSStackView(views: [top, split, jobRow, commandRow, bottom]); stack.orientation = .vertical; stack.spacing = 8; stack.translatesAutoresizingMaskIntoConstraints = false
         let content = window.contentView!; content.addSubview(stack)
         NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 10), stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -10), stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 10), stack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -10)])
@@ -284,16 +343,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             let item = NSMenuItem(); item.title = title; root.addItem(item); let menu = NSMenu(title: title); item.submenu = menu
             for (label, action, key) in items { let child = NSMenuItem(title: label, action: action, keyEquivalent: key); child.target = self; menu.addItem(child) }
         }
-        submenu("Total Command", [("Total Command Hakkında", #selector(about), ""), ("Güncellemeleri Kontrol Et…", #selector(checkUpdates), ""), ("Ayarlar…", #selector(settings), ","), ("Çık", #selector(quit), "q")])
-        submenu("Dosyalar", [("Klasör Aç…", #selector(chooseFolder), "o"), ("Yeni Klasör…", #selector(newFolder), ""), ("Yeni Metin Dosyası…", #selector(newFile), ""), ("Yeniden Adlandır…", #selector(rename), ""), ("Toplu Yeniden Adlandır…", #selector(batchRename), "m"), ("Bilgi Al", #selector(info), "i"), ("Finder’da Göster", #selector(reveal), ""), ("Çöpe Taşı…", #selector(trash), "")])
-        submenu("Seçim", [("Tümünü Seç", #selector(selectAll), "a"), ("Seçimi Tersine Çevir", #selector(invert), ""), ("Desene Göre Seç…", #selector(selectPattern), ""), ("Seçimi Temizle", #selector(clearSelection), "")])
-        submenu("Komutlar", [("İşlem Kuyruğu…", #selector(showQueue), ""), ("Kopyala", #selector(copyFiles), ""), ("Taşı", #selector(moveFiles), ""), ("Dosya Ara…", #selector(find), "f"), ("Panelleri Karşılaştır", #selector(compare), ""), ("Etkin Panelden Hedefe Eşitle…", #selector(sync), ""), ("Panelleri Değiştir", #selector(swap), "u"), ("Terminal’de Aç", #selector(terminal), ""), ("Yolu Kopyala", #selector(copyPath), "")])
-        submenu("Görünüm", [("Yeni Sekme", #selector(newTab), "t"), ("Sekmeyi Kapat", #selector(closeTab), "w"), ("Gizli Dosyaları Göster/Gizle", #selector(hidden), "."), ("Yenile", #selector(refresh), "r"), ("Önizle", #selector(preview), "y")])
-        submenu("Ağ", [("Sunucuya Bağlan…", #selector(connectServer), "k")])
-        submenu("Favoriler", [("Bu Klasörü Ekle", #selector(addBookmark), "d"), ("Favori Klasöre Git…", #selector(bookmarks), "b")])
-        submenu("Arşiv", [("ZIP Oluştur…", #selector(packZIP), ""), ("7z Oluştur…", #selector(pack7z), ""), ("Arşivi Çıkar", #selector(unpack), ""), ("Arşivde Gezin", #selector(browse), "")])
-        let editItem = NSMenuItem(); root.addItem(editItem); let edit = NSMenu(title: "Düzen"); editItem.submenu = edit
-        for (title, action, key) in [("Kes", #selector(cutClipboard), "x"), ("Kopyala", #selector(copyClipboard), "c"), ("Yapıştır", #selector(pasteClipboard), "v")] { let item = edit.addItem(withTitle: title, action: action, keyEquivalent: key); item.target = self }
+        submenu("Total Command", [(L("Total Command Hakkında"), #selector(about), ""), (L("Güncellemeleri Kontrol Et…"), #selector(checkUpdates), ""), (L("Ayarlar…"), #selector(settings), ","), (L("Çık"), #selector(quit), "q")])
+        submenu(L("Dosyalar"), [(L("Klasör Aç…"), #selector(chooseFolder), "o"), (L("Yeni Klasör…"), #selector(newFolder), ""), (L("Yeni Metin Dosyası…"), #selector(newFile), ""), (L("Yeniden Adlandır…"), #selector(rename), ""), (L("Toplu Yeniden Adlandır…"), #selector(batchRename), "m"), (L("Bilgi Al"), #selector(info), "i"), (L("Finder’da Göster"), #selector(reveal), ""), (L("Çöpe Taşı…"), #selector(trash), "")])
+        submenu(L("Seçim"), [(L("Tümünü Seç"), #selector(selectAll), "a"), (L("Seçimi Tersine Çevir"), #selector(invert), ""), (L("Desene Göre Seç…"), #selector(selectPattern), ""), (L("Seçimi Temizle"), #selector(clearSelection), "")])
+        submenu(L("Komutlar"), [(L("İşlem Kuyruğu…"), #selector(showQueue), ""), (L("Kopyala"), #selector(copyFiles), ""), (L("Taşı"), #selector(moveFiles), ""), (L("Dosya Ara…"), #selector(find), "f"), (L("Panelleri Karşılaştır"), #selector(compare), ""), (L("Dosya İçeriğini Karşılaştır…"), #selector(compareContent), ""), (L("Etkin Panelden Hedefe Eşitle…"), #selector(sync), ""), (L("Panelleri Değiştir"), #selector(swap), "u"), (L("Terminal’de Aç"), #selector(terminal), ""), (L("Yolu Kopyala"), #selector(copyPath), "")])
+        submenu(L("Görünüm"), [(L("Yeni Sekme"), #selector(newTab), "t"), (L("Sekmeyi Kapat"), #selector(closeTab), "w"), (L("Gizli Dosyaları Göster/Gizle"), #selector(hidden), "."), (L("Yenile"), #selector(refresh), "r"), (L("Önizle"), #selector(preview), "y")])
+        submenu(L("Ağ"), [(L("FTP / SFTP Bağlantı Yöneticisi…"), #selector(showSiteManager), "F"), (L("Hızlı Bağlan…"), #selector(showQuickConnect), "N"), (L("Bağlantıyı Kes"), #selector(disconnectRemote), ""), (L("Sunucuya Bağlan…"), #selector(connectServer), "k")])
+        submenu(L("Favoriler"), [(L("Bu Klasörü Ekle"), #selector(addBookmark), "d"), (L("Favori Klasöre Git…"), #selector(bookmarks), "b")])
+        submenu(L("Arşiv"), [(L("ZIP Oluştur…"), #selector(packZIP), ""), (L("7z Oluştur…"), #selector(pack7z), ""), (L("Arşivi Çıkar"), #selector(unpack), ""), (L("Arşivde Gezin"), #selector(browse), "")])
+        let editItem = NSMenuItem(); root.addItem(editItem); let edit = NSMenu(title: L("Düzen")); editItem.submenu = edit
+        for (title, action, key) in [(L("Kes"), #selector(cutClipboard), "x"), (L("Kopyala"), #selector(copyClipboard), "c"), (L("Yapıştır"), #selector(pasteClipboard), "v")] { let item = edit.addItem(withTitle: title, action: action, keyEquivalent: key); item.target = self }
     }
     func key(_ event: NSEvent) -> NSEvent? {
         guard NSApp.keyWindow === window, window.attachedSheet == nil, NSApp.modalWindow == nil, !(window.firstResponder is NSTextView) else { return event }
@@ -302,11 +361,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         if event.keyCode == 48 { activate(!activeLeft); window.makeFirstResponder(active.gridMode ? active.grid : active.table); return nil }
         if event.keyCode == 36 { active.openSelected(); return nil }
         if event.keyCode == 49, Prefs.bool("spacePreview") { preview(); return nil }
-        if event.keyCode == 53, job != nil { cancelJob(); return nil }
+        if event.keyCode == 53 {
+            if !active.search.stringValue.isEmpty {
+                active.search.stringValue = ""
+                active.reload()
+                window.makeFirstResponder(active.gridMode ? active.grid : active.table)
+                return nil
+            }
+            if job != nil { cancelJob(); return nil }
+        }
         if Prefs.bool("functionKeys") {
             if event.keyCode == 120 { rename(); return nil }
             let keys: [UInt16: String] = [99: "keyF3", 118: "keyF4", 96: "keyF5", 97: "keyF6", 98: "keyF7", 100: "keyF8"]
             if let key = keys[event.keyCode] { dispatchAction(Prefs.string(key)); return nil }
+        }
+        if !cmd && !event.modifierFlags.contains(.control) && !event.modifierFlags.contains(.option),
+           let chars = event.characters, !chars.isEmpty {
+            let scalar = chars.unicodeScalars.first?.value ?? 0
+            if scalar >= 32 && event.keyCode != 49 && event.keyCode != 36 && event.keyCode != 48 && event.keyCode != 51 && event.keyCode != 53 {
+                active.search.stringValue += chars
+                active.reload()
+                window.makeFirstResponder(active.search)
+                if let editor = window.fieldEditor(true, for: active.search) as? NSTextView {
+                    editor.setSelectedRange(NSRange(location: active.search.stringValue.count, length: 0))
+                }
+                return nil
+            }
         }
         return event
     }
@@ -325,36 +405,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             pane.table.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("ext"))?.isHidden = !Prefs.bool("extensions")
             pane.mode.selectedSegment = Prefs.int("defaultView"); pane.switchViewMode(); pane.reload()
         }
-        let labels = ["preview": "Önizle", "edit": "Düzenle", "copy": "Kopyala", "move": "Taşı", "folder": "Klasör", "trash": "Çöpe Taşı", "rename": "Adlandır", "find": "Ara"]
+        let labels = ["preview": L("Önizle"), "edit": L("Düzenle"), "copy": L("Kopyala"), "move": L("Taşı"), "folder": L("Klasör"), "trash": L("Çöpe Taşı"), "rename": L("Adlandır"), "find": L("Ara")]
         for n in 3...8 { if let button = actionButtons[n] { let action = Prefs.string("keyF\(n)"); button.title = "F\(n) " + (labels[action] ?? action); button.action = #selector(functionButton(_:)); button.tag = n } }
         activate(priorActive)
     }
     var actionButtons: [Int: NSButton] = [:]
     @objc func functionButton(_ sender: NSButton) { dispatchAction(Prefs.string("keyF\(sender.tag)")) }
-    func activate(_ value: Bool) { activeLeft = value; if !operations.busy { indicator.stringValue = value ? "Sol panel etkin → Hedef: sağ panel" : "Sağ panel etkin → Hedef: sol panel" } }
+    func activate(_ value: Bool) { activeLeft = value; if !operations.busy { indicator.stringValue = value ? L("Sol panel etkin → Hedef: sağ panel") : L("Sağ panel etkin → Hedef: sol panel") } }
     func show(_ error: Error) { NSAlert(error: error).runModal() }
-    func perform(_ action: () throws -> Void) { guard !operations.busy else { show(PanelError(message: "Önce işlem kuyruğunu tamamlayın veya bekleyen işleri iptal edin.")); return }; do { try action(); refresh() } catch { show(error); refresh() } }
+    func perform(_ action: () throws -> Void) { guard !operations.busy else { show(PanelError(message: L("Önce işlem kuyruğunu tamamlayın veya bekleyen işleri iptal edin."))); return }; do { try action(); refresh() } catch { show(error); refresh() } }
     func ask(_ title: String, initial: String, detail: String = "") -> String? {
-        let a = NSAlert(); a.messageText = title; a.informativeText = detail; a.addButton(withTitle: "Tamam"); a.addButton(withTitle: "Vazgeç")
+        let a = NSAlert(); a.messageText = title; a.informativeText = detail; a.addButton(withTitle: L("Tamam")); a.addButton(withTitle: L("Vazgeç"))
         let f = NSTextField(frame: NSRect(x: 0, y: 0, width: 380, height: 24)); f.stringValue = initial; a.accessoryView = f; a.window.initialFirstResponder = f
         return a.runModal() == .alertFirstButtonReturn ? f.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     }
     func startJob(_ title: String, queued: Bool = false, detail: String = "", work: @escaping FileJob.Work, complete: @escaping () -> Void = {}) {
-        guard queued || !operations.busy else { show(PanelError(message: "Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz.")); return }
+        guard queued || !operations.busy else { show(PanelError(message: L("Bu işlem için önce kuyruğun tamamlanmasını bekleyin. Kopyalama ve taşıma işlerini kuyruğa ekleyebilirsiniz."))); return }
         operations.enqueue(title: title, detail: detail, reportFailure: !queued, work: work, complete: complete)
     }
     func refreshQueueStatus() {
         queueController?.refresh()
         let waiting = operations.waitingCount
-        queueButton.title = waiting > 0 ? "İşlem Kuyruğu (\(waiting) bekleyen)" : "İşlem Kuyruğu"
+        queueButton.title = waiting > 0 ? L("İşlem Kuyruğu ({0} bekleyen)", waiting) : L("İşlem Kuyruğu")
         progress.isHidden = operations.current == nil; cancel.isHidden = operations.current == nil
         if let current = operations.current {
             progress.doubleValue = current.progress
-            indicator.stringValue = current.control.cancelled ? "İptal bekleniyor…" : "\(current.title): \(current.progressText) · \(waiting) bekleyen"
+            indicator.stringValue = current.control.cancelled ? L("İptal bekleniyor…") : L("{0}: {1} · {2} bekleyen", current.title, current.progressText, waiting)
         } else if waiting > 0 {
-            indicator.stringValue = "Sıra duraklatıldı · \(waiting) bekleyen işlem"
+            indicator.stringValue = L("Sıra duraklatıldı · {0} bekleyen işlem", waiting)
         } else if let last = operations.jobs.last, last.status == .failed {
-            indicator.stringValue = "İşlem tamamlanamadı: \(last.errorText) · Ayrıntılar: İşlem Kuyruğu"
+            indicator.stringValue = L("İşlem tamamlanamadı: {0} · Ayrıntılar: İşlem Kuyruğu", last.errorText)
         } else { activate(activeLeft) }
     }
     @objc func showQueue() {
@@ -378,41 +458,209 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     @objc func selectAll() { if let text = NSApp.keyWindow?.firstResponder as? NSTextView { text.selectAll(nil) } else { active.select(active.entries.map(\.url)) } }
     @objc func clearSelection() { active.select([]) }
     @objc func invert() { let set = Set(active.selected); active.select(active.entries.filter { !set.contains($0.url) }.map(\.url)) }
-    @objc func selectPattern() { if let pattern = ask("Dosya seçimi", initial: "*.jpg", detail: "* herhangi bir metin, ? tek karakter.") { active.selectPattern(pattern) } }
+    @objc func selectPattern() { if let pattern = ask(L("Dosya seçimi"), initial: "*.jpg", detail: L("* herhangi bir metin, ? tek karakter.")) { active.selectPattern(pattern) } }
+    @objc func showSiteManager() {
+        let sm = SiteManagerController()
+        sm.onConnect = { [weak self] site in self?.connectRemote(site: site) }
+        siteManagerController = sm
+        sm.showWindow(nil)
+        sm.window?.makeKeyAndOrderFront(nil)
+    }
+    @objc func showQuickConnect() {
+        let qc = QuickConnectController()
+        qc.onConnect = { [weak self] site in self?.connectRemote(site: site) }
+        quickConnectController = qc
+        qc.showWindow(nil)
+        qc.window?.makeKeyAndOrderFront(nil)
+    }
+    func connectRemote(site: RemoteSite) {
+        let session = RemoteSession(site: site)
+        active.remoteSession = session
+        active.reload()
+    }
+    @objc func disconnectRemote() {
+        if active.remoteSession != nil {
+            active.remoteSession = nil
+            active.navigate(FileManager.default.homeDirectoryForCurrentUser)
+        } else if other.remoteSession != nil {
+            other.remoteSession = nil
+            other.navigate(FileManager.default.homeDirectoryForCurrentUser)
+        }
+    }
+    @objc func compareContent() {
+        var fileA: URL?
+        var fileB: URL?
+
+        if active.selected.count == 2 {
+            fileA = active.selected[0]
+            fileB = active.selected[1]
+        } else if let selA = active.selected.first, let selB = other.selected.first, selA != selB {
+            fileA = selA
+            fileB = selB
+        } else if let selA = active.selected.first {
+            fileA = selA
+            let candidate = other.location.appendingPathComponent(selA.lastPathComponent)
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                fileB = candidate
+            } else {
+                let panel = NSOpenPanel()
+                panel.title = L("Karşılaştırılacak İkinci Dosyayı Seçin")
+                panel.canChooseFiles = true
+                panel.canChooseDirectories = false
+                if panel.runModal() == .OK, let u = panel.url {
+                    fileB = u
+                }
+            }
+        } else {
+            let panel = NSOpenPanel()
+            panel.title = L("Karşılaştırılacak Dosyaları Seçin")
+            panel.canChooseFiles = true
+            panel.canChooseDirectories = false
+            panel.allowsMultipleSelection = true
+            if panel.runModal() == .OK {
+                if panel.urls.count >= 2 {
+                    fileA = panel.urls[0]
+                    fileB = panel.urls[1]
+                } else if panel.urls.count == 1 {
+                    fileA = panel.urls[0]
+                    let p2 = NSOpenPanel()
+                    p2.title = L("Karşılaştırılacak İkinci Dosyayı Seçin")
+                    p2.canChooseFiles = true
+                    p2.canChooseDirectories = false
+                    if p2.runModal() == .OK, let u2 = p2.url {
+                        fileB = u2
+                    }
+                }
+            }
+        }
+
+        guard let left = fileA, let right = fileB else { return }
+        diffController = DiffWindowController(leftURL: left, rightURL: right)
+        diffController?.showWindow(nil)
+        diffController?.window?.makeKeyAndOrderFront(nil)
+    }
     @objc func copyFiles() { transfer(active.selected, to: other.location, move: false) }
     @objc func moveFiles() { transfer(active.selected, to: other.location, move: true) }
     func transfer(_ originalURLs: [URL], to destination: URL, move: Bool) {
         var urls = originalURLs; guard !urls.isEmpty else { return }
-        if move, Prefs.bool("confirmMove") { let a = NSAlert(); a.messageText = "\(urls.count) öğe taşınsın mı?"; a.informativeText = destination.path; a.addButton(withTitle: "Taşı"); a.addButton(withTitle: "Vazgeç"); guard a.runModal() == .alertFirstButtonReturn else { return } }
-        if Prefs.string("collision") == "skip" { urls = urls.filter { !FileManager.default.fileExists(atPath: destination.appendingPathComponent($0.lastPathComponent).path) }; guard !urls.isEmpty else { indicator.stringValue = "Hedefte bulunan dosyalar atlandı."; return } }
+        if let remote = active.remoteSession, other.remoteSession == nil {
+            let sources = urls
+            let targetDir = destination
+            startJob(move ? L("Taşınıyor") : L("Kopyalanıyor"), queued: true, detail: remote.site.host, work: { state, progress in
+                for (index, src) in sources.enumerated() {
+                    if state.cancelled { throw PanelError(message: L("İşlem iptal edildi.")) }
+                    let name = src.lastPathComponent
+                    let remotePath = remote.currentPath.hasSuffix("/") ? "\(remote.currentPath)\(name)" : "\(remote.currentPath)/\(name)"
+                    let targetFile = FileTasks.unique(targetDir.appendingPathComponent(name))
+                    try remote.download(remotePath: remotePath, to: targetFile, control: state, progress: { _, _, _ in
+                        progress(index, sources.count, name)
+                    })
+                    if move {
+                        try? remote.remove(path: remotePath, isDirectory: false)
+                    }
+                    progress(index + 1, sources.count, name)
+                }
+            })
+            return
+        }
+        if active.remoteSession == nil, let remote = other.remoteSession {
+            let sources = urls
+            let targetDir = remote.currentPath
+            startJob(move ? L("Taşınıyor") : L("Kopyalanıyor"), queued: true, detail: remote.site.host, work: { state, progress in
+                for (index, src) in sources.enumerated() {
+                    if state.cancelled { throw PanelError(message: L("İşlem iptal edildi.")) }
+                    try remote.upload(localURL: src, to: targetDir, control: state, progress: { _, _, _ in
+                        progress(index, sources.count, src.lastPathComponent)
+                    })
+                    if move {
+                        try? FileManager.default.removeItem(at: src)
+                    }
+                    progress(index + 1, sources.count, src.lastPathComponent)
+                }
+            })
+            return
+        }
+        if active.remoteSession != nil && other.remoteSession != nil {
+            show(PanelError(message: L("Uzak sunucudan uzak sunucuya doğrudan aktarım desteklenmiyor.")))
+            return
+        }
+        if move, Prefs.bool("confirmMove") { let a = NSAlert(); a.messageText = L("{0} öğe taşınsın mı?", urls.count); a.informativeText = destination.path; a.addButton(withTitle: L("Taşı")); a.addButton(withTitle: L("Vazgeç")); guard a.runModal() == .alertFirstButtonReturn else { return } }
+        if Prefs.string("collision") == "skip" { urls = urls.filter { !FileManager.default.fileExists(atPath: destination.appendingPathComponent($0.lastPathComponent).path) }; guard !urls.isEmpty else { indicator.stringValue = L("Hedefte bulunan dosyalar atlandı."); return } }
         let collisions = urls.filter { FileManager.default.fileExists(atPath: destination.appendingPathComponent($0.lastPathComponent).path) }
-        if !collisions.isEmpty, Prefs.string("collision") == "ask" { let a = NSAlert(); a.messageText = "\(collisions.count) dosyanın adı hedefte kullanılıyor."; a.informativeText = "Gelen dosyalara (2), (3)… eklenerek iki kopya da korunacak."; a.addButton(withTitle: "İkisini de Koru"); a.addButton(withTitle: "Vazgeç"); guard a.runModal() == .alertFirstButtonReturn else { return } }
+        if !collisions.isEmpty, Prefs.string("collision") == "ask" { let a = NSAlert(); a.messageText = L("{0} dosyanın adı hedefte kullanılıyor.", collisions.count); a.informativeText = L("Gelen dosyalara (2), (3)… eklenerek iki kopya da korunacak."); a.addButton(withTitle: L("İkisini de Koru")); a.addButton(withTitle: L("Vazgeç")); guard a.runModal() == .alertFirstButtonReturn else { return } }
         let skipExisting = Prefs.string("collision") == "skip"
         let sources = urls
         do { try FileTasks.validateTransfer(sources, to: destination) } catch { show(error); return }
         let detail = sources.map(\.path).joined(separator: "\n") + "\n→ " + destination.path
-        startJob(move ? "Taşınıyor" : "Kopyalanıyor", queued: true, detail: detail, work: { state, progress in
+        startJob(move ? L("Taşınıyor") : L("Kopyalanıyor"), queued: true, detail: detail, work: { state, progress in
             let eligible = skipExisting ? sources.filter { !FileManager.default.fileExists(atPath: destination.appendingPathComponent($0.lastPathComponent).path) } : sources
             try FileTasks.transfer(eligible, to: destination, move: move, cancelled: { state.cancelled }, progress: progress)
         })
     }
-    @objc func newFolder() { guard let name = ask("Yeni klasör", initial: "Yeni Klasör") else { return }; let directory = active.location; perform { try FileTasks.validateName(name); try FileManager.default.createDirectory(at: directory.appendingPathComponent(name), withIntermediateDirectories: false) } }
-    @objc func newFile() { guard let name = ask("Yeni metin dosyası", initial: "Yeni Dosya.txt") else { return }; let directory = active.location; perform { try FileTasks.validateName(name); let target = directory.appendingPathComponent(name); guard !FileManager.default.fileExists(atPath: target.path) else { throw PanelError(message: "Bu adda bir dosya zaten var.") }; try Data().write(to: target, options: .withoutOverwriting) } }
-    @objc func rename() { guard let u = active.selected.first, let name = ask("Yeniden adlandır", initial: u.lastPathComponent) else { return }; perform { try FileTasks.validateName(name); try FileManager.default.moveItem(at: u, to: u.deletingLastPathComponent().appendingPathComponent(name)) } }
+    @objc func newFolder() {
+        guard let name = ask(L("Yeni klasör"), initial: L("Yeni Klasör")) else { return }
+        if let remote = active.remoteSession {
+            let path = remote.currentPath.hasSuffix("/") ? "\(remote.currentPath)\(name)" : "\(remote.currentPath)/\(name)"
+            do {
+                try remote.makeDirectory(path: path)
+                active.reload()
+            } catch { show(error) }
+            return
+        }
+        let directory = active.location; perform { try FileTasks.validateName(name); try FileManager.default.createDirectory(at: directory.appendingPathComponent(name), withIntermediateDirectories: false) }
+    }
+    @objc func newFile() { guard let name = ask(L("Yeni metin dosyası"), initial: L("Yeni Dosya.txt")) else { return }; let directory = active.location; perform { try FileTasks.validateName(name); let target = directory.appendingPathComponent(name); guard !FileManager.default.fileExists(atPath: target.path) else { throw PanelError(message: L("Bu adda bir dosya zaten var.")) }; try Data().write(to: target, options: .withoutOverwriting) } }
+    @objc func rename() {
+        guard let u = active.selected.first, let name = ask(L("Yeniden adlandır"), initial: u.lastPathComponent) else { return }
+        if let remote = active.remoteSession {
+            let oldPath = remote.currentPath.hasSuffix("/") ? "\(remote.currentPath)\(u.lastPathComponent)" : "\(remote.currentPath)/\(u.lastPathComponent)"
+            let newPath = remote.currentPath.hasSuffix("/") ? "\(remote.currentPath)\(name)" : "\(remote.currentPath)/\(name)"
+            do {
+                try remote.rename(oldPath: oldPath, newPath: newPath)
+                active.reload()
+            } catch { show(error) }
+            return
+        }
+        perform { try FileTasks.validateName(name); try FileManager.default.moveItem(at: u, to: u.deletingLastPathComponent().appendingPathComponent(name)) }
+    }
     @objc func batchRename() {
-        let urls = active.selected; guard !urls.isEmpty else { return }
-        guard let pattern = ask("Toplu yeniden adlandırma", initial: "[N]_[C].[E]", detail: "[N] uzantısız ad · [E] uzantı · [C] sayaç (1’den başlar). Sonraki adımda önizleme gösterilir.") else { return }
-        do {
-            let plan = try RenamePlan.make(urls, pattern: pattern, start: 1)
-            let a = NSAlert(); a.messageText = "\(plan.count) dosyayı yeniden adlandır"
-            let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 580, height: 260)); text.isEditable = false; text.font = .systemFont(ofSize: 12); text.string = plan.map { "\($0.source.lastPathComponent)  →  \($0.destination.lastPathComponent)" }.joined(separator: "\n")
-            let scroll = NSScrollView(frame: text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll; a.addButton(withTitle: "Uygula"); a.addButton(withTitle: "Vazgeç")
-            if a.runModal() == .alertFirstButtonReturn { perform { try FileTasks.rename(plan) } }
-        } catch { show(error) }
+        let urls = active.selected
+        guard !urls.isEmpty else {
+            show(PanelError(message: L("Yeniden adlandırmak için dosya seçin.")))
+            return
+        }
+        let mr = MultiRenameWindowController(urls: urls)
+        mr.onApplied = { [weak self] in
+            self?.refresh()
+        }
+        multiRenameController = mr
+        mr.showWindow(nil)
+        mr.window?.makeKeyAndOrderFront(nil)
     }
     @objc func trash() {
-        let urls = active.selected; guard !urls.isEmpty else { return }; let a = NSAlert(); a.messageText = "\(urls.count) öğe Çöp Kutusu’na taşınsın mı?"; a.informativeText = "Çöp Kutusu’ndan geri alabilirsiniz."; a.addButton(withTitle: "Çöpe Taşı"); a.addButton(withTitle: "Vazgeç")
-        if !Prefs.bool("confirmTrash") || a.runModal() == .alertFirstButtonReturn { startJob("Çöpe taşınıyor", work: { state, progress in for (i, u) in urls.enumerated() { if state.cancelled { break }; try FileManager.default.trashItem(at: u, resultingItemURL: nil); progress(i + 1, urls.count, u.lastPathComponent) } }) }
+        let urls = active.selected; guard !urls.isEmpty else { return }
+        if let remote = active.remoteSession {
+            if Prefs.bool("confirmTrash") {
+                let a = NSAlert()
+                a.messageText = L("Uzak sunucudaki seçili {0} öğe kalıcı olarak silinecek. Emin misiniz?", urls.count)
+                a.addButton(withTitle: L("Sil"))
+                a.addButton(withTitle: L("Vazgeç"))
+                guard a.runModal() == .alertFirstButtonReturn else { return }
+            }
+            startJob(L("Çöpe taşınıyor"), work: { state, progress in
+                for (i, u) in urls.enumerated() {
+                    if state.cancelled { break }
+                    let name = u.lastPathComponent
+                    let p = remote.currentPath.hasSuffix("/") ? "\(remote.currentPath)\(name)" : "\(remote.currentPath)/\(name)"
+                    let isDir = self.active.entries.first(where: { $0.url == u })?.directory ?? false
+                    try? remote.remove(path: p, isDirectory: isDir)
+                    progress(i + 1, urls.count, name)
+                }
+            })
+            return
+        }
+        let a = NSAlert(); a.messageText = L("{0} öğe Çöp Kutusu’na taşınsın mı?", urls.count); a.informativeText = L("Çöp Kutusu’ndan geri alabilirsiniz."); a.addButton(withTitle: L("Çöpe Taşı")); a.addButton(withTitle: L("Vazgeç"))
+        if !Prefs.bool("confirmTrash") || a.runModal() == .alertFirstButtonReturn { startJob(L("Çöpe taşınıyor"), work: { state, progress in for (i, u) in urls.enumerated() { if state.cancelled { break }; try FileManager.default.trashItem(at: u, resultingItemURL: nil); progress(i + 1, urls.count, u.lastPathComponent) } }) }
     }
     @objc func preview() { previewURLs = active.selected; guard !previewURLs.isEmpty, let panel = QLPreviewPanel.shared() else { return }; panel.dataSource = self; panel.reloadData(); panel.makeKeyAndOrderFront(nil) }
     func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int { previewURLs.count }
@@ -427,16 +675,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     @objc func pasteClipboard() { if let text = NSApp.keyWindow?.firstResponder as? NSTextView { text.paste(nil); return }; let urls = NSPasteboard.general.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []; transfer(urls, to: active.location, move: clipboardMove && clipboardVersion == NSPasteboard.general.changeCount); clipboardMove = false }
     @objc func copyPath() { NSPasteboard.general.clearContents(); NSPasteboard.general.setString((active.selected.isEmpty ? [active.location] : active.selected).map(\.path).joined(separator: "\n"), forType: .string) }
     @objc func terminal() { NSWorkspace.shared.open([active.location], withApplicationAt: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"), configuration: NSWorkspace.OpenConfiguration()) }
-    @objc func info() { guard let u = active.selected.first else { return }; do { let a = try FileManager.default.attributesOfItem(atPath: u.path); let alert = NSAlert(); alert.messageText = u.lastPathComponent; alert.informativeText = "Yol: \(u.path)\nBoyut: \(a[.size] ?? 0) bayt\nDeğiştirilme: \(a[.modificationDate] ?? "—")\nİzinler: \(String((a[.posixPermissions] as? NSNumber)?.intValue ?? 0, radix: 8))"; alert.runModal() } catch { show(error) } }
+    @objc func info() { guard let u = active.selected.first else { return }; do { let a = try FileManager.default.attributesOfItem(atPath: u.path); let alert = NSAlert(); alert.messageText = u.lastPathComponent; alert.informativeText = L("Yol: {0}\nBoyut: {1} bayt\nDeğiştirilme: {2}\nİzinler: {3}", u.path, a[.size] ?? 0, a[.modificationDate] ?? "—", String((a[.posixPermissions] as? NSNumber)?.intValue ?? 0, radix: 8)); alert.runModal() } catch { show(error) } }
     @objc func sync() {
         let source = active.location, target = other.location; let includeHidden = active.showHidden
         var plan: [SyncChange] = []
-        startJob("Eşitleme planı hazırlanıyor", work: { state, progress in plan = try FileTasks.syncPlan(from: source, to: target, includeHidden: includeHidden, cancelled: { state.cancelled }); progress(1, 1, "Hazır") }, complete: {
-            let a = NSAlert(); a.messageText = "Hedefe eşitle: \(plan.count) değişiklik"
-            a.informativeText = "Kaynak: \(source.path)\nHedef: \(target.path)\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur."
-            let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 620, height: 240)); text.isEditable = false; text.font = .systemFont(ofSize: 11); text.string = plan.isEmpty ? "Klasörler bu ölçütlere göre aynı." : plan.map { ($0.exists ? "Güncelle: " : "Ekle: ") + String($0.target.path.dropFirst(target.path.count + 1)) }.joined(separator: "\n")
-            let scroll = NSScrollView(frame: text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll; a.addButton(withTitle: "Eşitle"); a.addButton(withTitle: "Vazgeç")
-            if a.runModal() == .alertFirstButtonReturn, !plan.isEmpty { self.startJob("Eşitleniyor", work: { state, progress in try FileTasks.applySync(plan, cancelled: { state.cancelled }, progress: progress) }) }
+        startJob(L("Eşitleme planı hazırlanıyor"), work: { state, progress in plan = try FileTasks.syncPlan(from: source, to: target, includeHidden: includeHidden, cancelled: { state.cancelled }); progress(1, 1, L("Hazır")) }, complete: {
+            let a = NSAlert(); a.messageText = L("Hedefe eşitle: {0} değişiklik", plan.count)
+            a.informativeText = L("Kaynak: {0}\nHedef: {1}\nBoyut ve tarihe göre karşılaştırılır. Hedefteki fazla dosyalar silinmez. Değişen dosyaların eski halleri .totalcommand-backup adıyla korunur.", source.path, target.path)
+            let text = NSTextView(frame: NSRect(x: 0, y: 0, width: 620, height: 240)); text.isEditable = false; text.font = .systemFont(ofSize: 11); text.string = plan.isEmpty ? L("Klasörler bu ölçütlere göre aynı.") : plan.map { ($0.exists ? L("Güncelle: ") : L("Ekle: ")) + String($0.target.path.dropFirst(target.path.count + 1)) }.joined(separator: "\n")
+            let scroll = NSScrollView(frame: text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll; a.addButton(withTitle: L("Eşitle")); a.addButton(withTitle: L("Vazgeç"))
+            if a.runModal() == .alertFirstButtonReturn, !plan.isEmpty { self.startJob(L("Eşitleniyor"), work: { state, progress in try FileTasks.applySync(plan, cancelled: { state.cancelled }, progress: progress) }) }
         })
     }
     @objc func compare() {
@@ -444,44 +692,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         let l = Dictionary(uniqueKeysWithValues: a.map { ($0.url.lastPathComponent, $0) }), r = Dictionary(uniqueKeysWithValues: b.map { ($0.url.lastPathComponent, $0) })
         left.select(a.filter { e in guard let x = r[e.url.lastPathComponent] else { return true }; return x.size != e.size || abs(x.date.timeIntervalSince(e.date)) > 2 }.map(\.url))
         right.select(b.filter { e in guard let x = l[e.url.lastPathComponent] else { return true }; return x.size != e.size || abs(x.date.timeIntervalSince(e.date)) > 2 }.map(\.url))
-        indicator.stringValue = "Karşılaştırma: adı, boyutu veya tarihi farklı dosyalar seçildi (içerik karşılaştırılmaz)."
+        indicator.stringValue = L("Karşılaştırma: adı, boyutu veya tarihi farklı dosyalar seçildi (içerik karşılaştırılmaz).")
     }
     @objc func find() {
-        guard let query = ask("Alt klasörlerde dosya ara", initial: "", detail: "Dosya adının bir bölümünü yazın. Sonuçlardan birini seçerek konumuna gidebilirsiniz."), !query.isEmpty else { return }
+        guard let query = ask(L("Alt klasörlerde dosya ara"), initial: "", detail: L("Dosya adının bir bölümünü yazın. Sonuçlardan birini seçerek konumuna gidebilirsiniz.")), !query.isEmpty else { return }
         let directory = active.location; let pane = active; var results: [URL] = []
-        startJob("Aranıyor", work: { state, progress in
+        startJob(L("Aranıyor"), work: { state, progress in
             let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: [.isSymbolicLinkKey], options: Prefs.bool("searchHidden") ? [.skipsPackageDescendants] : [.skipsHiddenFiles, .skipsPackageDescendants])
             var count = 0
-            while let u = enumerator?.nextObject() as? URL { if state.cancelled { throw PanelError(message: "Arama iptal edildi.") }; count += 1; if u.lastPathComponent.localizedCaseInsensitiveContains(query) { results.append(u) }; if results.count == Prefs.int("searchLimit") { break }; if count % 200 == 0 { progress(0, 1, "\(count) öğe tarandı") } }
+            while let u = enumerator?.nextObject() as? URL { if state.cancelled { throw PanelError(message: L("Arama iptal edildi.")) }; count += 1; if u.lastPathComponent.localizedCaseInsensitiveContains(query) { results.append(u) }; if results.count == Prefs.int("searchLimit") { break }; if count % 200 == 0 { progress(0, 1, L("{0} öğe tarandı", count)) } }
         }, complete: {
-            let a = NSAlert(); a.messageText = "\(results.count) sonuç (en fazla \(Prefs.int("searchLimit")))"
+            let a = NSAlert(); a.messageText = L("{0} sonuç (en fazla {1})", results.count, Prefs.int("searchLimit"))
             let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 650, height: 28)); for u in results { popup.addItem(withTitle: String(u.path.dropFirst(directory.path.count + 1))) }; a.accessoryView = popup
-            a.addButton(withTitle: "Konumuna Git"); a.addButton(withTitle: "Kapat")
+            a.addButton(withTitle: L("Konumuna Git")); a.addButton(withTitle: L("Kapat"))
             if a.runModal() == .alertFirstButtonReturn, results.indices.contains(popup.indexOfSelectedItem) { let u = results[popup.indexOfSelectedItem]; pane.navigate(u.deletingLastPathComponent()); pane.select([u]) }
         })
     }
     func execute(_ executable: String, _ args: [String], directory: URL, state: JobState) throws -> String {
-        if state.cancelled { throw PanelError(message: "İşlem iptal edildi.") }
+        if state.cancelled { throw PanelError(message: L("İşlem iptal edildi.")) }
         let p = Process(); p.executableURL = URL(fileURLWithPath: executable); p.arguments = args; p.currentDirectoryURL = directory
         let output = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         FileManager.default.createFile(atPath: output.path, contents: nil); let handle = try FileHandle(forWritingTo: output); defer { try? handle.close(); try? FileManager.default.removeItem(at: output) }
         p.standardOutput = handle; p.standardError = handle; p.standardInput = FileHandle.nullDevice
         try p.run(); DispatchQueue.main.async { self.process = p; if state.cancelled, p.isRunning { p.terminate() } }; p.waitUntilExit()
         let text = (try? String(contentsOf: output, encoding: .utf8)) ?? ""
-        if state.cancelled { throw PanelError(message: "İşlem iptal edildi.") }
-        guard p.terminationStatus == 0 else { throw PanelError(message: text.isEmpty ? "İşlem tamamlanamadı (çıkış kodu \(p.terminationStatus))." : String(text.prefix(2000))) }; return text
+        if state.cancelled { throw PanelError(message: L("İşlem iptal edildi.")) }
+        guard p.terminationStatus == 0 else { throw PanelError(message: text.isEmpty ? L("İşlem tamamlanamadı (çıkış kodu {0}).", p.terminationStatus) : String(text.prefix(2000))) }; return text
     }
     @objc func pack() { createArchive(format: Prefs.string("archiveFormat")) }
     @objc func packZIP() { createArchive(format: "zip") }
     @objc func pack7z() { createArchive(format: "7zip") }
     func createArchive(format: String) {
         let urls = active.selected; let directory = active.location; guard !urls.isEmpty else { return }; let ext = format == "zip" ? "zip" : "7z"
-        guard let name = ask("\(ext.uppercased()) arşivi oluştur", initial: "Arşiv.\(ext)") else { return }
+        guard let name = ask(L("{0} arşivi oluştur", ext.uppercased()), initial: L("Arşiv.{0}", ext)) else { return }
         do { try FileTasks.validateName(name) } catch { show(error); return }
         let target = directory.appendingPathComponent(name.hasSuffix(".\(ext)") ? name : name + ".\(ext)")
-        guard !FileManager.default.fileExists(atPath: target.path) else { show(PanelError(message: "Bu adda bir dosya zaten var.")); return }
+        guard !FileManager.default.fileExists(atPath: target.path) else { show(PanelError(message: L("Bu adda bir dosya zaten var."))); return }
         let staging = directory.appendingPathComponent(".panelmac-archive-" + UUID().uuidString)
-        startJob("Arşiv oluşturuluyor", work: { state, progress in
+        startJob(L("Arşiv oluşturuluyor"), work: { state, progress in
             defer { try? FileManager.default.removeItem(at: staging) }
             _ = try self.execute("/usr/bin/bsdtar", ["--format", format, "-cf", staging.path, "--"] + urls.map(\.lastPathComponent), directory: directory, state: state)
             try FileManager.default.moveItem(at: staging, to: target); progress(1, 1, target.lastPathComponent)
@@ -490,12 +738,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
     @objc func browse() { guard let u = active.selected.first else { return }; browseArchive(u, pane: active) }
     func browseArchive(_ archive: URL, pane: FilePane) {
         let target = FileManager.default.temporaryDirectory.appendingPathComponent("TotalCommand-Archive-" + UUID().uuidString)
-        extract(archive, to: target) { self.temporary.append(target); pane.archiveRoot = target; pane.archiveSource = archive; pane.navigate(target); self.indicator.stringValue = "Arşiv geçici klasörde açıldı. Değişiklikler özgün arşive yazılmaz." }
+        extract(archive, to: target) { self.temporary.append(target); pane.archiveRoot = target; pane.archiveSource = archive; pane.navigate(target); self.indicator.stringValue = L("Arşiv geçici klasörde açıldı. Değişiklikler özgün arşive yazılmaz.") }
     }
     @objc func unpack() { guard let u = active.selected.first else { return }; let target = FileTasks.unique(other.location.appendingPathComponent(u.deletingPathExtension().lastPathComponent)); extract(u, to: target) }
     func extract(_ archive: URL, to target: URL, complete: @escaping () -> Void = {}) {
-        guard ["zip", "7z", "rar", "tar", "gz", "bz2", "xz", "tgz"].contains(archive.pathExtension.lowercased()) else { show(PanelError(message: "Desteklenen arşivler: ZIP, 7z, RAR, TAR, GZ, BZ2, XZ.")); return }
-        startJob("Arşiv açılıyor", work: { state, progress in
+        guard ["zip", "7z", "rar", "tar", "gz", "bz2", "xz", "tgz"].contains(archive.pathExtension.lowercased()) else { show(PanelError(message: L("Desteklenen arşivler: ZIP, 7z, RAR, TAR, GZ, BZ2, XZ."))); return }
+        startJob(L("Arşiv açılıyor"), work: { state, progress in
             let listing = try self.execute("/usr/bin/bsdtar", ["-tf", archive.path], directory: archive.deletingLastPathComponent(), state: state); try FileTasks.validateArchivePaths(listing)
             try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false)
             do { _ = try self.execute("/usr/bin/bsdtar", ["-xf", archive.path, "-C", target.path, "--no-same-owner", "--no-same-permissions"], directory: target, state: state) }
@@ -503,20 +751,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         }, complete: complete)
     }
     @objc func connectServer() {
-        guard let text = ask("Ağ sunucusuna bağlan", initial: "smb://", detail: "SMB veya AFP adresi girin. Bağlantı Finder’da açılır. Bağlandıktan sonra Yenile’ye basarak diski panel listesinden seçebilirsiniz."), let url = URL(string: text), ["smb", "afp"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else { return }
+        guard let text = ask(L("Ağ sunucusuna bağlan"), initial: "smb://", detail: L("SMB veya AFP adresi girin. Bağlantı Finder’da açılır. Bağlandıktan sonra Yenile’ye basarak diski panel listesinden seçebilirsiniz.")), let url = URL(string: text), ["smb", "afp"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else { return }
         NSWorkspace.shared.open(url)
     }
     @objc func runCommand() {
         let text = command.stringValue.trimmingCharacters(in: .whitespacesAndNewlines); guard !text.isEmpty else { return }; let directory = active.location; var output = ""
-        startJob("Komut çalışıyor", work: { state, progress in output = try self.execute("/bin/zsh", ["-c", text], directory: directory, state: state); progress(1, 1, "Bitti") }, complete: {
-            let log = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false); log.title = "Komut çıktısı — " + directory.lastPathComponent; log.isReleasedWhenClosed = false
-            let view = NSTextView(); view.isEditable = false; view.font = .monospacedSystemFont(ofSize: 12, weight: .regular); view.string = "$ " + text + "\n\n" + (output.isEmpty ? "Komut çıktı vermeden tamamlandı." : output); view.textContainerInset = NSSize(width: 12, height: 12)
+        startJob(L("Komut çalışıyor"), work: { state, progress in output = try self.execute("/bin/zsh", ["-c", text], directory: directory, state: state); progress(1, 1, L("Bitti")) }, complete: {
+            let log = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false); log.title = L("Komut çıktısı — ") + directory.lastPathComponent; log.isReleasedWhenClosed = false
+            let view = NSTextView(); view.isEditable = false; view.font = .monospacedSystemFont(ofSize: 12, weight: .regular); view.string = "$ " + text + "\n\n" + (output.isEmpty ? L("Komut çıktı vermeden tamamlandı.") : output); view.textContainerInset = NSSize(width: 12, height: 12)
             let scroll = NSScrollView(frame: log.contentView!.bounds); scroll.autoresizingMask = [.width, .height]; scroll.documentView = view; scroll.hasVerticalScroller = true; view.isVerticallyResizable = true; view.isHorizontallyResizable = false; view.autoresizingMask = [.width]; view.textContainer?.widthTracksTextView = true; log.contentView?.addSubview(scroll); self.logWindows.removeAll { !$0.isVisible }; self.logWindows.append(log); log.center(); log.makeKeyAndOrderFront(nil)
         })
     }
-    @objc func addBookmark() { var paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; if !paths.contains(active.location.path) { paths.append(active.location.path); UserDefaults.standard.set(paths, forKey: "bookmarks") }; indicator.stringValue = "Favorilere eklendi: " + active.location.lastPathComponent }
-    @objc func bookmarks() { let paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; guard !paths.isEmpty else { show(PanelError(message: "Henüz favori yok. Command+D ile klasör ekleyin.")); return }; let a = NSAlert(); a.messageText = "Favori klasörler"; let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 550, height: 28)); popup.addItems(withTitles: paths); a.accessoryView = popup; a.addButton(withTitle: "Git"); a.addButton(withTitle: "Vazgeç"); if a.runModal() == .alertFirstButtonReturn { active.navigate(URL(fileURLWithPath: paths[popup.indexOfSelectedItem])) } }
-    @objc func about() { let a = NSAlert(); a.messageText = "Total Command \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.1")"; a.informativeText = "macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama."; a.addButton(withTitle: "Tamam"); a.addButton(withTitle: "Lisansı Gör"); a.addButton(withTitle: "Kaynak Kod"); let result = a.runModal(); if result == .alertSecondButtonReturn { self.showLicense() } else if result == .alertThirdButtonReturn { NSWorkspace.shared.open(URL(string: "https://github.com/ferdisahin/total-command")!) } }
+    @objc func addBookmark() { var paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; if !paths.contains(active.location.path) { paths.append(active.location.path); UserDefaults.standard.set(paths, forKey: "bookmarks") }; indicator.stringValue = L("Favorilere eklendi: ") + active.location.lastPathComponent }
+    @objc func bookmarks() { let paths = UserDefaults.standard.stringArray(forKey: "bookmarks") ?? []; guard !paths.isEmpty else { show(PanelError(message: L("Henüz favori yok. Command+D ile klasör ekleyin."))); return }; let a = NSAlert(); a.messageText = L("Favori klasörler"); let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 550, height: 28)); popup.addItems(withTitles: paths); a.accessoryView = popup; a.addButton(withTitle: L("Git")); a.addButton(withTitle: L("Vazgeç")); if a.runModal() == .alertFirstButtonReturn { active.navigate(URL(fileURLWithPath: paths[popup.indexOfSelectedItem])) } }
+    @objc func about() { let a = NSAlert(); a.messageText = "Total Command \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.1")"; a.informativeText = L("macOS için çift panelli dosya yöneticisi.\n© 2026 Ferdi Sahin · GNU GPL sürüm 3\nBu özgür yazılımı GPLv3 koşullarıyla dağıtabilir ve değiştirebilirsiniz. Hiçbir garanti verilmez.\nTotal Commander’dan esinlenen bağımsız uygulama."); a.addButton(withTitle: L("Tamam")); a.addButton(withTitle: L("Lisansı Gör")); a.addButton(withTitle: L("Kaynak Kod")); let result = a.runModal(); if result == .alertSecondButtonReturn { self.showLicense() } else if result == .alertThirdButtonReturn { NSWorkspace.shared.open(URL(string: "https://github.com/ferdisahin/total-command")!) } }
     @objc func checkUpdates() { performUpdateCheck(manual: true) }
     func checkAutomaticUpdates() {
         guard NSApp.isActive, !operations.busy, NSApp.modalWindow == nil, window.attachedSheet == nil else { return }
@@ -532,7 +780,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         if updateChecker.isChecking { manualUpdateRequested = manualUpdateRequested || manual; return }
         manualUpdateRequested = manual
         settingsController?.checkingUpdates = true
-        settingsController?.updateMessage = "GitHub’da yeni sürüm aranıyor…"
+        settingsController?.updateMessage = L("GitHub’da yeni sürüm aranıyor…")
         Prefs.set("updateLastAttempt", Date())
         let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.2.2"
         updateChecker.check(current: current, includePreviews: Prefs.bool("updatePreviews")) { [weak self] result in
@@ -541,24 +789,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
             self.settingsController?.checkingUpdates = false
             switch result {
             case .success(let release):
-                self.settingsController?.updateMessage = release.map { "Yeni sürüm: \($0.tag)" } ?? "Seçili kanalda \(current) sürümünden daha yeni bir sürüm yok."
+                self.settingsController?.updateMessage = release.map { L("Yeni sürüm: {0}", $0.tag) } ?? L("Seçili kanalda {0} sürümünden daha yeni bir sürüm yok.", current)
                 if let release {
                     if (requested || Prefs.int("updateInterval") != 0) && (!release.isPreview || Prefs.bool("updatePreviews")) && (requested || Prefs.string("updateNotifiedTag") != release.tag) { self.pendingUpdate = release; self.pendingUpdateIsManual = requested }
                 } else if requested {
-                    let alert = NSAlert(); alert.messageText = "Yeni sürüm bulunamadı"; alert.informativeText = "Yüklü sürüm: \(current).\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz."; alert.runModal()
+                    let alert = NSAlert(); alert.messageText = L("Yeni sürüm bulunamadı"); alert.informativeText = L("Yüklü sürüm: {0}.\nÖnizleme sürümlerini Ayarlar → Güncellemeler’den dahil edebilirsiniz.", current); alert.runModal()
                 }
             case .failure(let error):
-                self.settingsController?.updateMessage = "Kontrol tamamlanamadı. " + error.localizedDescription
-                if requested { self.show(PanelError(message: "Güncelleme kontrolü tamamlanamadı.\n" + error.localizedDescription)) }
+                self.settingsController?.updateMessage = L("Kontrol tamamlanamadı. ") + error.localizedDescription
+                if requested { self.show(PanelError(message: L("Güncelleme kontrolü tamamlanamadı.\n") + error.localizedDescription)) }
             }
             if (requested || NSApp.isActive), !self.operations.busy, NSApp.modalWindow == nil, self.window.attachedSheet == nil, let release = self.pendingUpdate { self.pendingUpdate = nil; self.presentUpdate(release) }
         }
     }
     func presentUpdate(_ release: AppRelease) {
         Prefs.set("updateNotifiedTag", release.tag)
-        let alert = NSAlert(); alert.messageText = "Total Command \(release.tag) hazır"
-        alert.informativeText = "\(release.isPreview ? "Bu bir önizleme sürümüdür.\n" : "")Sürüm notlarını ve imzalı indirmeleri GitHub’da açabilirsiniz. Homebrew ile kurduysanız brew update ve brew upgrade --cask total-command komutlarını kullanabilirsiniz."
-        alert.addButton(withTitle: "İndirme Sayfasını Aç"); alert.addButton(withTitle: "Daha Sonra")
+        let alert = NSAlert(); alert.messageText = L("Total Command {0} hazır", release.tag)
+        alert.informativeText = L("{0}Sürüm notlarını ve imzalı indirmeleri GitHub’da açabilirsiniz. Homebrew ile kurduysanız brew update ve brew upgrade --cask total-command komutlarını kullanabilirsiniz.", release.isPreview ? L("Bu bir önizleme sürümüdür.\n") : "")
+        alert.addButton(withTitle: L("İndirme Sayfasını Aç")); alert.addButton(withTitle: L("Daha Sonra"))
         if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(release.pageURL) }
     }
     func showLicense() {
@@ -568,7 +816,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, QLPr
         let scroll = NSScrollView(frame: log.contentView!.bounds); scroll.autoresizingMask = [.width, .height]; scroll.hasVerticalScroller = true; scroll.documentView = view; log.contentView?.addSubview(scroll); logWindows.removeAll { !$0.isVisible }; logWindows.append(log); log.center(); log.makeKeyAndOrderFront(nil)
     }
     @objc func quit() { NSApp.terminate(nil) }
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { if operations.busy { let a = NSAlert(); a.messageText = "Önce çalışan ve bekleyen işlemleri tamamlayın veya İşlem Kuyruğu’ndan iptal edin."; a.runModal(); return .terminateCancel }; return .terminateNow }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { if operations.busy { let a = NSAlert(); a.messageText = L("Önce çalışan ve bekleyen işlemleri tamamlayın veya İşlem Kuyruğu’ndan iptal edin."); a.runModal(); return .terminateCancel }; return .terminateNow }
     func applicationWillTerminate(_ notification: Notification) { updateTimer?.invalidate(); left.save("leftTabs"); right.save("rightTabs"); for u in temporary { try? FileManager.default.removeItem(at: u) } }
     func windowShouldClose(_ sender: NSWindow) -> Bool { !operations.busy }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

@@ -4,11 +4,17 @@
 import Foundation
 @main struct Tests {
     static func main() throws {
+        try testLocalization()
         testJobs()
         try testUpdates()
+        RemoteTests.run()
+        DiffTests.run()
+        MultiRenameTests.run()
         let suite = "TotalCommand.Test." + UUID().uuidString
         Prefs.store = UserDefaults(suiteName: suite)!
         Prefs.register()
+        assert(Prefs.string("appLanguage") == "system")
+        Prefs.set("appLanguage", "tr"); assert(Prefs.string("appLanguage") == "tr")
         assert(Prefs.int("updateInterval") == 0 && !Prefs.bool("updatePreviews"))
         Prefs.set("updateInterval", 7); Prefs.set("updatePreviews", true)
         assert(Prefs.int("updateInterval") == 7 && Prefs.bool("updatePreviews"))
@@ -18,6 +24,7 @@ import Foundation
         Prefs.store.synchronize()
         assert(UserDefaults(suiteName: suite)!.integer(forKey: "fontSize") == 14)
         Prefs.store.removePersistentDomain(forName: suite)
+        assert(Prefs.string("appLanguage") == "system")
         assert(Prefs.int("updateInterval") == 0 && !Prefs.bool("updatePreviews"))
         assert(Prefs.int("fontSize") == 12)
         let fm = FileManager.default

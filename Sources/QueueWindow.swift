@@ -6,16 +6,16 @@ final class QueueWindowController: NSWindowController, NSTableViewDataSource, NS
     let table = NSTableView()
     let detail = NSTextView()
     let summary = NSTextField(labelWithString: "")
-    let pauseButton = NSButton(title: "Sırayı Duraklat", target: nil, action: nil)
-    let cancelButton = NSButton(title: "Seçili İşi İptal Et", target: nil, action: nil)
+    let pauseButton = NSButton(title: L("Sırayı Duraklat"), target: nil, action: nil)
+    let cancelButton = NSButton(title: L("Seçili İşi İptal Et"), target: nil, action: nil)
     private var selectedID: UUID?
     private var refreshing = false
     init(queue: FileJobQueue) {
         self.queue = queue
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 520), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window.title = "Total Command — İşlem Kuyruğu"; window.minSize = NSSize(width: 720, height: 420); window.isReleasedWhenClosed = false
+        window.title = L("Total Command — İşlem Kuyruğu"); window.minSize = NSSize(width: 720, height: 420); window.isReleasedWhenClosed = false
         super.init(window: window)
-        for (key, title, width) in [("title", "İşlem", 150.0), ("state", "Durum", 130.0), ("progress", "İlerleme", 85.0), ("detail", "Kaynak / Hedef", 450.0)] {
+        for (key, title, width) in [("title", L("İşlem"), 150.0), ("state", L("Durum"), 130.0), ("progress", L("İlerleme"), 85.0), ("detail", L("Kaynak / Hedef"), 450.0)] {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(key)); column.title = title; column.width = width; table.addTableColumn(column)
         }
         table.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle; table.autoresizingMask = [.width]; table.frame = NSRect(x: 0, y: 0, width: 868, height: 0)
@@ -26,10 +26,10 @@ final class QueueWindowController: NSWindowController, NSTableViewDataSource, NS
         detailScroll.heightAnchor.constraint(equalToConstant: 100).isActive = true
         pauseButton.target = self; pauseButton.action = #selector(togglePause)
         cancelButton.target = self; cancelButton.action = #selector(cancelSelected)
-        let cancelWaiting = NSButton(title: "Bekleyenleri İptal Et", target: self, action: #selector(cancelPending))
-        let clear = NSButton(title: "Geçmişi Temizle", target: self, action: #selector(clearHistory))
+        let cancelWaiting = NSButton(title: L("Bekleyenleri İptal Et"), target: self, action: #selector(cancelPending))
+        let clear = NSButton(title: L("Geçmişi Temizle"), target: self, action: #selector(clearHistory))
         let tools = NSStackView(views: [pauseButton, cancelButton, cancelWaiting, NSView(), clear]); tools.spacing = 8
-        let note = NSTextField(wrappingLabelWithString: "Duraklatma, sıradaki işin başlamasını bekletir. Çalışan dosya işlemi tamamlanır. Geçmişi temizlemek dosyaları silmez."); note.font = .systemFont(ofSize: 11); note.textColor = .secondaryLabelColor
+        let note = NSTextField(wrappingLabelWithString: L("Duraklatma, sıradaki işin başlamasını bekletir. Çalışan dosya işlemi tamamlanır. Geçmişi temizlemek dosyaları silmez.")); note.font = .systemFont(ofSize: 11); note.textColor = .secondaryLabelColor
         let stack = NSStackView(views: [summary, tools, scroll, detailScroll, note]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 10; stack.translatesAutoresizingMaskIntoConstraints = false
         window.contentView!.addSubview(stack)
         NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 16), stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor, constant: -16), stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 16), stack.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor, constant: -16)])
@@ -46,13 +46,13 @@ final class QueueWindowController: NSWindowController, NSTableViewDataSource, NS
         else { selectedID = nil; table.deselectAll(nil) }
         refreshing = false
         let failed = queue.jobs.filter { $0.status == .failed }.count
-        summary.stringValue = "\(queue.current == nil ? 0 : 1) çalışan · \(queue.waitingCount) bekleyen · \(failed) hatalı\(queue.paused ? " · Sıra duraklatıldı" : "")"
-        pauseButton.title = queue.paused ? "Sırayı Sürdür" : "Sırayı Duraklat"
+        summary.stringValue = L("{0} çalışan · {1} bekleyen · {2} hatalı{3}", queue.current == nil ? 0 : 1, queue.waitingCount, failed, queue.paused ? L(" · Sıra duraklatıldı") : "")
+        pauseButton.title = queue.paused ? L("Sırayı Sürdür") : L("Sırayı Duraklat")
         showDetail()
     }
     func showDetail() {
         cancelButton.isEnabled = selected.map { $0.status == .waiting || $0.status == .running } ?? false
-        guard let job = selected else { detail.string = "İşlem ayrıntıları için bir satır seçin. Geçmiş bu oturum boyunca tutulur."; return }
+        guard let job = selected else { detail.string = L("İşlem ayrıntıları için bir satır seçin. Geçmiş bu oturum boyunca tutulur."); return }
         detail.string = "\(job.title) — \(job.statusText)\n\(job.detail)\n\(job.progressText)\(job.errorText.isEmpty ? "" : "\n" + job.errorText)"
     }
     func numberOfRows(in tableView: NSTableView) -> Int { queue.jobs.count }

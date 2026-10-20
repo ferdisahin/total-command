@@ -28,11 +28,11 @@ final class FileJob {
     }
     var statusText: String {
         switch status {
-        case .waiting: return "Bekliyor"
-        case .running: return control.cancelled ? "İptal bekleniyor" : "Çalışıyor"
-        case .completed: return "Tamamlandı"
-        case .failed: return "Hata"
-        case .cancelled: return "İptal edildi"
+        case .waiting: return L("Bekliyor")
+        case .running: return control.cancelled ? L("İptal bekleniyor") : L("Çalışıyor")
+        case .completed: return L("Tamamlandı")
+        case .failed: return L("Hata")
+        case .cancelled: return L("İptal edildi")
         }
     }
 }

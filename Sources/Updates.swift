@@ -59,12 +59,12 @@ struct AppRelease: Decodable {
 enum ReleaseFeed {
     static func newest(_ data: Data, status: Int, current: String, includePreviews: Bool) throws -> AppRelease? {
         guard status == 200 else {
-            throw PanelError(message: status == 403 || status == 429 ? "GitHub istek sınırına ulaşıldı. Daha sonra yeniden deneyin." : "GitHub güncelleme bilgisi alınamadı (HTTP \(status)). Daha sonra yeniden deneyin.")
+            throw PanelError(message: status == 403 || status == 429 ? L("GitHub istek sınırına ulaşıldı. Daha sonra yeniden deneyin.") : L("GitHub güncelleme bilgisi alınamadı (HTTP {0}). Daha sonra yeniden deneyin.", status))
         }
-        guard data.count <= 2_000_000, let installed = AppVersion(current) else { throw PanelError(message: "Sürüm bilgisi okunamadı.") }
+        guard data.count <= 2_000_000, let installed = AppVersion(current) else { throw PanelError(message: L("Sürüm bilgisi okunamadı.")) }
         let releases: [AppRelease]
         do { releases = try JSONDecoder().decode([AppRelease].self, from: data) }
-        catch { throw PanelError(message: "GitHub geçerli bir sürüm listesi döndürmedi. Daha sonra yeniden deneyin.") }
+        catch { throw PanelError(message: L("GitHub geçerli bir sürüm listesi döndürmedi. Daha sonra yeniden deneyin.")) }
         return releases.filter {
             guard !$0.draft, let version = AppVersion($0.tag), version > installed else { return false }
             return includePreviews || !$0.isPreview

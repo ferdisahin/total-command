@@ -3,6 +3,15 @@
 
 import Foundation
 
+struct Entry: Equatable {
+    let url: URL
+    let directory: Bool
+    let size: Int64
+    let date: Date
+    var isParent = false
+    var ext: String { directory ? "" : url.pathExtension }
+}
+
 struct PanelError: LocalizedError {
     let message: String
     var errorDescription: String? { message }
@@ -11,7 +20,7 @@ struct RenamePlan {
     let source: URL
     let destination: URL
     static func make(_ urls: [URL], pattern: String, start: Int) throws -> [RenamePlan] {
-        guard !pattern.isEmpty else { throw PanelError(message: "Ad şablonu boş olamaz.") }
+        guard !pattern.isEmpty else { throw PanelError(message: L("Ad şablonu boş olamaz.")) }
         let plan = try urls.enumerated().map { index, url -> RenamePlan in
             let ext = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true ? "" : url.pathExtension
             let base = ext.isEmpty ? url.lastPathComponent : url.deletingPathExtension().lastPathComponent
@@ -21,9 +30,9 @@ struct RenamePlan {
             return RenamePlan(source: url, destination: url.deletingLastPathComponent().appendingPathComponent(name))
         }
         let targets = plan.map { $0.destination.path.lowercased() }
-        guard Set(targets).count == targets.count else { throw PanelError(message: "Şablon birden fazla dosyaya aynı adı veriyor.") }
+        guard Set(targets).count == targets.count else { throw PanelError(message: L("Şablon birden fazla dosyaya aynı adı veriyor.")) }
         for row in plan where row.source != row.destination {
-            if FileManager.default.fileExists(atPath: row.destination.path) { throw PanelError(message: "Hedef zaten var: \(row.destination.lastPathComponent)") }
+            if FileManager.default.fileExists(atPath: row.destination.path) { throw PanelError(message: L("Hedef zaten var: {0}", row.destination.lastPathComponent)) }
         }
         return plan
     }
@@ -31,7 +40,7 @@ struct RenamePlan {
 final class FileTasks {
     static let fm = FileManager.default
     static func validateName(_ name: String) throws {
-        guard !name.isEmpty, name != ".", name != "..", !name.contains("/"), !name.contains(":"), !name.contains("\0") else { throw PanelError(message: "Geçerli bir dosya adı girin.") }
+        guard !name.isEmpty, name != ".", name != "..", !name.contains("/"), !name.contains(":"), !name.contains("\0") else { throw PanelError(message: L("Geçerli bir dosya adı girin.")) }
     }
     static func unique(_ target: URL) -> URL {
         if !fm.fileExists(atPath: target.path) { return target }
@@ -48,14 +57,14 @@ final class FileTasks {
         let dest = destination.resolvingSymlinksInPath().standardizedFileURL.path
         for source in sources {
             let src = source.resolvingSymlinksInPath().standardizedFileURL.path
-            if dest == src || dest.hasPrefix(src + "/") { throw PanelError(message: "Bir klasör kendi içine kopyalanamaz veya taşınamaz.") }
-            if source.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL.path == dest { throw PanelError(message: "Kaynak ve hedef klasör aynı.") }
+            if dest == src || dest.hasPrefix(src + "/") { throw PanelError(message: L("Bir klasör kendi içine kopyalanamaz veya taşınamaz.")) }
+            if source.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL.path == dest { throw PanelError(message: L("Kaynak ve hedef klasör aynı.")) }
         }
     }
     static func transfer(_ sources: [URL], to destination: URL, move: Bool, cancelled: () -> Bool, progress: (Int, Int, String) -> Void) throws {
         try validateTransfer(sources, to: destination)
         for (index, source) in sources.enumerated() {
-            if cancelled() { throw PanelError(message: "İşlem iptal edildi. Tamamlanan dosyalar hedefte kaldı.") }
+            if cancelled() { throw PanelError(message: L("İşlem iptal edildi. Tamamlanan dosyalar hedefte kaldı.")) }
             progress(index, sources.count, source.lastPathComponent)
             let target = unique(destination.appendingPathComponent(source.lastPathComponent))
             if move { try fm.moveItem(at: source, to: target) }
@@ -70,7 +79,7 @@ final class FileTasks {
         }
     }
     private static func copy(_ source: URL, to target: URL, cancelled: () -> Bool) throws {
-        if cancelled() { throw PanelError(message: "Kopyalama iptal edildi.") }
+        if cancelled() { throw PanelError(message: L("Kopyalama iptal edildi.")) }
         let values = try source.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         if values.isSymbolicLink == true { try fm.copyItem(at: source, to: target); return }
         if values.isDirectory == true {
@@ -89,7 +98,7 @@ final class FileTasks {
     }
     static func validateArchivePaths(_ listing: String) throws {
         for path in listing.split(separator: "\n") {
-            if path.hasPrefix("/") || path.split(separator: "/").contains("..") { throw PanelError(message: "Arşiv güvenli olmayan bir dosya yolu içeriyor: \(path)") }
+            if path.hasPrefix("/") || path.split(separator: "/").contains("..") { throw PanelError(message: L("Arşiv güvenli olmayan bir dosya yolu içeriyor: {0}", path)) }
         }
     }
 }
@@ -104,7 +113,7 @@ extension FileTasks {
         try validateTransfer([source], to: target)
         var changes: [SyncChange] = []
         func visit(_ src: URL, _ dst: URL) throws {
-            if cancelled() { throw PanelError(message: "Eşitleme planı iptal edildi.") }
+            if cancelled() { throw PanelError(message: L("Eşitleme planı iptal edildi.")) }
             let a = try src.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey])
             let b = try? dst.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey])
             let exists = fm.fileExists(atPath: dst.path) || b?.isSymbolicLink == true
@@ -120,7 +129,7 @@ extension FileTasks {
     }
     static func applySync(_ changes: [SyncChange], cancelled: () -> Bool, progress: (Int, Int, String) -> Void) throws {
         for (i, change) in changes.enumerated() {
-            if cancelled() { throw PanelError(message: "Eşitleme iptal edildi. Tamamlanan değişiklikler korundu.") }
+            if cancelled() { throw PanelError(message: L("Eşitleme iptal edildi. Tamamlanan değişiklikler korundu.")) }
             var backup: URL?
             if change.exists {
                 let candidate = unique(change.target.deletingLastPathComponent().appendingPathComponent(change.target.lastPathComponent + ".totalcommand-backup"))

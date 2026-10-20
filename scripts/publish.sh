@@ -23,5 +23,5 @@ xcrun stapler validate "$DMG"
 (cd "$OUT" && shasum -a 256 -c SHA256SUMS)
 # --verify-tag prevents accidentally associating artifacts with the wrong source.
 gh release create "$TAG" "$DMG" "$ZIP" "$OUT/SHA256SUMS" "$OUT/SOURCE_COMMIT" --repo "$REPOSITORY" \
-  --verify-tag --draft --prerelease --title "Total Command $VERSION" --notes-file docs/RELEASE_NOTES.md
+  --verify-tag --draft --prerelease --title "Total Command $VERSION" --generate-notes
 print "Draft prerelease created; review it on GitHub before making it public."
