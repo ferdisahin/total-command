@@ -24,3 +24,7 @@ To remove a test installation: `brew uninstall --cask total-command`. This retai
 Added semantic-version/channel selection tests, invalid feed and HTTP error tests, and daily/weekly scheduling tests. Update settings defaults and reset are covered. A live GitHub check from the new native settings tab completed successfully and displayed no newer eligible version. Universal development build and the existing file-operation suite passed. This is not a signed 0.2.2 release validation.
 
 A separate QA app with injected HTTP fixtures also verified the loading state, persistent HTTP 429 rate-limit explanation, and update-available alert. The synthetic v9.0.0 fixture was not published. Native layout was reviewed in the existing light appearance; dark appearance and VoiceOver were not separately exercised.
+
+## 0.2.3 development checks
+
+Queue tests cover FIFO execution, pending/running cancellation, pause/resume between jobs, continuation after failure and the 100-entry finished-history limit. Existing transfer, archive, preference and update tests passed. Native UI checks verified Return on the parent entry, cancelling a queued copy and copying a second file after resuming. The cancelled copy did not create its destination; the completed file matched its source. The experimental middle bar was removed after its layout failed; the original two-pane split is retained. This is not a signed 0.2.3 release validation.

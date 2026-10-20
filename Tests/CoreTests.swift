@@ -4,6 +4,7 @@
 import Foundation
 @main struct Tests {
     static func main() throws {
+        testJobs()
         try testUpdates()
         let suite = "TotalCommand.Test." + UUID().uuidString
         Prefs.store = UserDefaults(suiteName: suite)!

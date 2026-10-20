@@ -1,3 +1,12 @@
+Total Command 0.2.3 (unreleased preview)
+
+- Pinned parent-folder navigation entry in list and icon views, excluded from file operations.
+- Sequential copy/move queue, pause/resume between jobs, cancellation, and session error history.
+- Separate Turkish and English READMEs with a language selector.
+- Retains the existing full-width two-pane layout; the experimental middle icon bar was removed.
+
+---
+
 Total Command 0.2.2 (published preview)
 
 - Check for updates from the application menu or Settings → Updates.
